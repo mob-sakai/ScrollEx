@@ -17,7 +17,7 @@
 using UnityEngine;
 using System.Collections;
 using EnhancedUI;
-using EnhancedUI.EnhancedScroller;
+//using EnhancedUI.EnhancedScroller;
 using Mobcast.Coffee;
 
 namespace EnhancedScrollerDemos.SuperSimpleDemo

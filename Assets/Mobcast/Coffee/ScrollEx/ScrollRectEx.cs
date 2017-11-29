@@ -637,6 +637,36 @@ namespace Mobcast.Coffee
 			Loop = !loop;
 		}
 
+
+		/// <summary>
+		/// Turn looping on or off. This is just a helper function so 
+		/// you don't have to keep track of the state of the looping
+		/// in your own scripts.
+		/// </summary>
+		public void SetPosition(float value, float dir)
+		{
+
+			if (loop)
+			{
+				// if we are looping, we need to make sure the new position isn't past the jump trigger.
+				// if it is we need to reset back to the jump position on the other side of the area.
+			
+				if (0 < dir && value > _loopLastJumpTrigger)
+				{
+					//Debug.Log("name: " + name + " went past the last jump trigger, looping back around");
+					value = _loopFirstScrollPosition + (value - _loopLastJumpTrigger);
+				}
+				else if (dir < 0 && value < _loopFirstJumpTrigger)
+				{
+					//Debug.Log("name: " + name + " went past the first jump trigger, looping back around");
+					value = _loopLastScrollPosition - (_loopFirstJumpTrigger - value);
+				}
+			}
+			
+			// set the scroll position to the tweened position
+			ScrollPosition = value;
+		}
+
 		/// <summary>
 		/// Jump to a position in the scroller based on a dataIndex. This overload allows you
 		/// to specify a specific offset within a cell as well.
@@ -1490,7 +1520,18 @@ namespace Mobcast.Coffee
 		}
 		ScrollRect m_ScrollRectXXX;
 
-
+		public ScrollTweener scrollSnap
+		{
+			get
+			{
+				if (!m_ScrollSnap)
+				{
+					m_ScrollSnap = GetComponent<ScrollTweener>() ?? gameObject.AddComponent<ScrollTweener>();
+				}
+				return m_ScrollSnap;
+			}
+		}
+		ScrollTweener m_ScrollSnap;
 
 		public HorizontalOrVerticalLayoutGroup layoutGroupXXX
 		{
@@ -1501,20 +1542,18 @@ namespace Mobcast.Coffee
 					m_LayoutGroupXXX = contentXXX.GetComponent<HorizontalOrVerticalLayoutGroup>();
 				}
 
-				// LayoutGroupを再設定
-				if (m_ScrollRect.vertical != (m_LayoutGroupXXX is VerticalLayoutGroup))
+				if (!m_LayoutGroupXXX || scrollRectXXX.vertical != (m_LayoutGroupXXX is VerticalLayoutGroup))
 				{
-					var padding = m_LayoutGroupXXX.padding;
-					var spacing = m_LayoutGroupXXX.spacing;
-					DestroyImmediate(m_LayoutGroupXXX);
-
-					if (scrollRectXXX.vertical)
-						m_LayoutGroupXXX = contentXXX.gameObject.AddComponent<VerticalLayoutGroup>();
+#if UNITY_EDITOR
+					if (!Application.isPlaying)
+					{
+						UnityEditor.EditorApplication.delayCall += UpdateLauyout;
+					}
 					else
-						m_LayoutGroupXXX = contentXXX.gameObject.AddComponent<HorizontalLayoutGroup>();
-
-					m_LayoutGroupXXX.padding = padding;
-					m_LayoutGroupXXX.spacing = spacing;
+#endif
+					{
+						UpdateLauyout();
+					}
 				}
 
 				return m_LayoutGroupXXX;
@@ -1522,6 +1561,43 @@ namespace Mobcast.Coffee
 		}
 		HorizontalOrVerticalLayoutGroup m_LayoutGroupXXX;
 
+
+		void UpdateLauyout()
+		{
+			var type = scrollRectXXX.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
+			var layout = contentXXX.GetComponent<LayoutGroup>();
+			if (!layout)
+			{
+				m_LayoutGroupXXX = contentXXX.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
+			}
+			else if (scrollRectXXX.vertical != (layout is VerticalLayoutGroup))
+			{
+#if UNITY_EDITOR
+				if (!Application.isPlaying)
+				{
+					ComponentConverter.ConvertTo(layout, type);
+					m_LayoutGroupXXX = contentXXX.GetComponent<HorizontalOrVerticalLayoutGroup>();
+				}
+				else
+#endif
+				{
+					RectOffset padding = layout ? layout.padding : new RectOffset();
+					float spacing = (layout is HorizontalOrVerticalLayoutGroup) ? (layout as HorizontalOrVerticalLayoutGroup).spacing : 0;
+					DestroyImmediate(layout);
+					m_LayoutGroupXXX = contentXXX.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
+					m_LayoutGroupXXX.padding = padding;
+					m_LayoutGroupXXX.spacing = spacing;
+				}
+			}
+		}
+
+		public Scrollbar scrollbarXXX
+		{
+			get
+			{
+				return scrollRectXXX.vertical ? m_ScrollRect.verticalScrollbar : m_ScrollRect.horizontalScrollbar;
+			}
+		}
 
 		/// <summary>
 		/// Caches and initializes the scroller
@@ -1540,17 +1616,21 @@ namespace Mobcast.Coffee
 				return;
 			}
 
-			// destroy any content objects if they exist. Likely there will be
-			// one at design time because Unity gives errors if it can't find one.
-			if (m_ScrollRect.content != null)
-			{
-				DestroyImmediate(m_ScrollRect.content.gameObject);
-			}
-
-			// Create a new active cell view container.
-			go = new GameObject("Container", typeof(RectTransform));
-			go.transform.SetParent(m_ScrollRectTransform);
-			_container = go.GetComponent<RectTransform>();
+			_container = contentXXX;
+			_layoutGroup = layoutGroupXXX;
+			_scrollbar = scrollbarXXX;
+//
+//			// destroy any content objects if they exist. Likely there will be
+//			// one at design time because Unity gives errors if it can't find one.
+//			if (m_ScrollRect.content != null)
+//			{
+//				DestroyImmediate(m_ScrollRect.content.gameObject);
+//			}
+//
+//			// Create a new active cell view container.
+//			go = new GameObject("Container", typeof(RectTransform));
+//			go.transform.SetParent(m_ScrollRectTransform);
+//			_container = go.GetComponent<RectTransform>();
 
 			// force the scroller to scroll in the direction we want
 			// set the containers anchor and pivot
@@ -1560,9 +1640,9 @@ namespace Mobcast.Coffee
 				_container.anchorMin = new Vector2(0, 1);
 				_container.anchorMax = Vector2.one;
 				_container.pivot = new Vector2(0.5f, 1f);
-				_scrollbar = m_ScrollRect.verticalScrollbar;
+//				_scrollbar = m_ScrollRect.verticalScrollbar;
 				_scrollbarVisibility = m_ScrollRect.verticalScrollbarVisibility;
-				go.AddComponent<VerticalLayoutGroup>();
+//				go.AddComponent<VerticalLayoutGroup>();
 			}
 			else
 			{
@@ -1570,9 +1650,9 @@ namespace Mobcast.Coffee
 				_container.anchorMin = Vector2.zero;
 				_container.anchorMax = new Vector2(0, 1f);
 				_container.pivot = new Vector2(0, 0.5f);
-				_scrollbar = m_ScrollRect.horizontalScrollbar;
+//				_scrollbar = m_ScrollRect.horizontalScrollbar;
 				_scrollbarVisibility = m_ScrollRect.horizontalScrollbarVisibility;
-				go.AddComponent<HorizontalLayoutGroup>();
+//				go.AddComponent<HorizontalLayoutGroup>();
 			}
 
 			_container.offsetMax = Vector2.zero;
@@ -1584,9 +1664,9 @@ namespace Mobcast.Coffee
 			m_ScrollRect.content = _container;
 
 			// cache the layout group and set up its spacing and padding
-			_layoutGroup = _container.GetComponent<HorizontalOrVerticalLayoutGroup>();
-			_layoutGroup.spacing = spacing;
-			_layoutGroup.padding = padding;
+//			_layoutGroup = _container.GetComponent<HorizontalOrVerticalLayoutGroup>();
+//			_layoutGroup.spacing = spacing;
+//			_layoutGroup.padding = padding;
 			_layoutGroup.childAlignment = TextAnchor.UpperLeft;
 			_layoutGroup.childForceExpandHeight = true;
 			_layoutGroup.childForceExpandWidth = true;

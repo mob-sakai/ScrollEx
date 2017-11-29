@@ -2,7 +2,7 @@
 
 using UnityEngine;
 using UnityEngine.UI;
-using EnhancedUI.EnhancedScroller;
+//using EnhancedUI.EnhancedScroller;
 using Mobcast.Coffee;
 
 namespace EnhancedScrollerDemos.SuperSimpleDemo
