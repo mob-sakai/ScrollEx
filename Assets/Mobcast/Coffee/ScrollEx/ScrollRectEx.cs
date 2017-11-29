@@ -864,7 +864,7 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Cached reference to the layout group that handles view positioning
 		/// </summary>
-		private HorizontalOrVerticalLayoutGroup _layoutGroup;
+		public HorizontalOrVerticalLayoutGroup _layoutGroup;
 
 		/// <summary>
 		/// Reference to the delegate that will tell this scroller information
@@ -1455,6 +1455,73 @@ namespace Mobcast.Coffee
 			else
 				return _GetCellIndexAtPosition(position, middleIndex + 1, endIndex);
 		}
+
+		public RectTransform contentXXX
+		{
+			get
+			{
+				if (!m_ContentXXX)
+				{
+					var sr = scrollRectXXX;
+					if (!sr.content)
+					{
+						var go = new GameObject("Content", typeof(RectTransform));
+						go.transform.SetParent(sr.transform);
+						sr.content = go.GetComponent<RectTransform>();
+					}
+					m_ContentXXX = scrollRectXXX.content;
+				}
+				return m_ContentXXX;
+			}
+		}
+		RectTransform m_ContentXXX;
+
+
+		public ScrollRect scrollRectXXX
+		{
+			get
+			{
+				if (!m_ScrollRectXXX)
+				{
+					m_ScrollRectXXX = GetComponent<ScrollRect>();
+				}
+				return m_ScrollRectXXX;
+			}
+		}
+		ScrollRect m_ScrollRectXXX;
+
+
+
+		public HorizontalOrVerticalLayoutGroup layoutGroupXXX
+		{
+			get
+			{
+				if (!m_LayoutGroupXXX)
+				{
+					m_LayoutGroupXXX = contentXXX.GetComponent<HorizontalOrVerticalLayoutGroup>();
+				}
+
+				// LayoutGroupを再設定
+				if (m_ScrollRect.vertical != (m_LayoutGroupXXX is VerticalLayoutGroup))
+				{
+					var padding = m_LayoutGroupXXX.padding;
+					var spacing = m_LayoutGroupXXX.spacing;
+					DestroyImmediate(m_LayoutGroupXXX);
+
+					if (scrollRectXXX.vertical)
+						m_LayoutGroupXXX = contentXXX.gameObject.AddComponent<VerticalLayoutGroup>();
+					else
+						m_LayoutGroupXXX = contentXXX.gameObject.AddComponent<HorizontalLayoutGroup>();
+
+					m_LayoutGroupXXX.padding = padding;
+					m_LayoutGroupXXX.spacing = spacing;
+				}
+
+				return m_LayoutGroupXXX;
+			}
+		}
+		HorizontalOrVerticalLayoutGroup m_LayoutGroupXXX;
+
 
 		/// <summary>
 		/// Caches and initializes the scroller
