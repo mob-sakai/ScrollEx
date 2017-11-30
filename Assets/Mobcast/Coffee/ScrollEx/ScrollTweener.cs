@@ -1,28 +1,75 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using System.Linq;
 using UnityEngine.UI;
 using Mobcast.Coffee;
 using UnityEngine.EventSystems;
+using System.Collections.Generic;
 
-public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IScrollHandler
+
+public interface IScrollSnap
 {
+	void Snap();
+
+	void SetPosition(float pos, float dir);
+}
+
+
+public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IScrollHandler, IScrollSnap
+{
+
+	public enum Alignment
+	{
+		TopOrLeft,
+		Center,
+		BottomOrRight,
+	}
+
+
+	public void Snap()
+	{
+	}
+
+	public void SetPosition(float pos, float dir)
+	{
+	}
+
 	bool m_IsDragging;
 	int m_ScrollCount;
 	Coroutine m_CoTweening;
+	IScrollSnap m_Target;
+
+
+	public bool m_TriggerSnap;
+	public bool m_TriggerOnEndDrag;
+
+	public float snapVelocityThreshold;
+
+	public float snapWatchOffset;
+
+	public float snapJumpToOffset;
+
+	public float snapCellCenterOffset;
+
+	public bool snapUseCellSpacing;
+
+	public TweenType snapTweenType;
+
+	public float snapTweenTime;
+
+	public Alignment alignment;
+
 
 	public void OnScroll(PointerEventData eventData)
 	{
 		StopSnapping();
-//		StopTweening ();
 		m_ScrollCount = 10;
-//		IsDragging = true;
 	}
 
 	public void OnBeginDrag(PointerEventData eventData)
 	{
 		StopSnapping();
-//		StopTweening ();
 		m_ScrollCount = 0;
 		m_IsDragging = true;
 	}
@@ -32,6 +79,10 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 		StopSnapping();
 		m_ScrollCount = 0;
 		m_IsDragging = false;
+		if (m_TriggerOnEndDrag)
+		{
+			m_TriggerSnap = true;
+		}
 	}
 
 	/// <summary>
@@ -122,34 +173,55 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 		}
 	}
 
+
+	static List<Component> s_Components = new List<Component>();
+
 	void Awake()
 	{
 		m_ScrollRect = GetComponent<ScrollRect>();
 		m_ScrollRectEx = GetComponent<ScrollRectEx>();
+
+		// Find snap target.
+		m_Target = this;
+		GetComponents(s_Components);
+		foreach (var c in s_Components)
+		{
+			if (c != this && c is IScrollSnap)
+			{
+				m_Target = c as IScrollSnap;
+				break;
+			}
+		}
+		s_Components.Clear();
 	}
 
-	void Update()
+	public void Update()
 	{
-		if (canSnap && Mathf.Abs(m_ScrollRect.vertical ? m_ScrollRect.velocity.y : m_ScrollRect.velocity.x) <= th)
+		if (0 < m_ScrollCount && m_ScrollCount-- == 0 && m_TriggerOnEndDrag)
 		{
-			Snap();
+			m_TriggerSnap = true;
+		}
+		if (!m_IsDragging && m_TriggerSnap && Mathf.Abs(m_ScrollRect.vertical ? m_ScrollRect.velocity.y : m_ScrollRect.velocity.x) <= snapVelocityThreshold)
+		{
+			m_TriggerSnap = false;
+			OnStartSnapAuto();
+			//m_Target.Snap();
 		}
 	}
 
 
-	[SerializeField] float th = 100;
-	[SerializeField] bool canSnap = false;
+//	[SerializeField] float th = 100;
 
-	void Snap()
-	{
-		// if the speed has dropped below the threshhold velocity
-		//				Debug.Log(LinearVelocity + ", " + IsDragging + ", " + scrollCount);
-		if (Mathf.Abs(m_ScrollRect.vertical ? m_ScrollRect.velocity.y : m_ScrollRect.velocity.x) <= th && !m_IsDragging)
-		{
-			// Call the snap function
-			Snap();
-		}
-	}
+	//	void Snap()
+	//	{
+	//		// if the speed has dropped below the threshhold velocity
+	//		//				Debug.Log(LinearVelocity + ", " + IsDragging + ", " + scrollCount);
+	//		if (Mathf.Abs(m_ScrollRect.vertical ? m_ScrollRect.velocity.y : m_ScrollRect.velocity.x) <= th && !m_IsDragging)
+	//		{
+	//			// Call the snap function
+	//			Snap();
+	//		}
+	//	}
 
 	void StopSnapping()
 	{
@@ -164,10 +236,12 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 
 //			_snapJumping = false;
 			m_ScrollRect.inertia = m_Inertia;
+			m_ScrollRect.movementType = movementType;
 		}
 	}
 
 	bool m_Inertia = false;
+	ScrollRect.MovementType movementType;
 
 	public bool isSnapping { get { return m_CoTweening != null; } }
 
@@ -195,6 +269,8 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 
 	void OnStartSnapAuto()
 	{
+		m_TriggerSnap = false;
+		m_ScrollCount = 0;
 		if (m_ScrollRectEx)
 		{
 			m_ScrollRectEx.Snap();
@@ -215,9 +291,13 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 	{
 		float upDir = endValue - startValue;
 		m_Inertia = m_ScrollRect.inertia;
+		movementType = m_ScrollRect.movementType;
+		m_ScrollRect.inertia = false;
+		m_ScrollRect.movementType = ScrollRect.MovementType.Unrestricted;
 		if (tweenType == TweenType.immediate || time <= 0)
 		{
 			OnChangedPosition(endValue, upDir);
+//			m_Target.SetPosition(endValue, upDir);
 		}
 		else
 		{
@@ -235,139 +315,19 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 			// while the tween has time left, use an easing function
 			while (unscaleTimer < time)
 			{
-				switch (tweenType)
-				{
-					case TweenType.linear:
-						newPosition = linear(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.spring:
-						newPosition = spring(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInQuad:
-						newPosition = easeInQuad(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutQuad:
-						newPosition = easeOutQuad(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutQuad:
-						newPosition = easeInOutQuad(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInCubic:
-						newPosition = easeInCubic(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutCubic:
-						newPosition = easeOutCubic(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutCubic:
-						newPosition = easeInOutCubic(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInQuart:
-						newPosition = easeInQuart(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutQuart:
-						newPosition = easeOutQuart(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutQuart:
-						newPosition = easeInOutQuart(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInQuint:
-						newPosition = easeInQuint(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutQuint:
-						newPosition = easeOutQuint(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutQuint:
-						newPosition = easeInOutQuint(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInSine:
-						newPosition = easeInSine(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutSine:
-						newPosition = easeOutSine(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutSine:
-						newPosition = easeInOutSine(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInExpo:
-						newPosition = easeInExpo(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutExpo:
-						newPosition = easeOutExpo(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutExpo:
-						newPosition = easeInOutExpo(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInCirc:
-						newPosition = easeInCirc(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutCirc:
-						newPosition = easeOutCirc(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutCirc:
-						newPosition = easeInOutCirc(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInBounce:
-						newPosition = easeInBounce(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutBounce:
-						newPosition = easeOutBounce(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutBounce:
-						newPosition = easeInOutBounce(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInBack:
-						newPosition = easeInBack(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutBack:
-						newPosition = easeOutBack(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutBack:
-						newPosition = easeInOutBack(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInElastic:
-						newPosition = easeInElastic(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeOutElastic:
-						newPosition = easeOutElastic(startValue, endValue, (unscaleTimer / time));
-						break;
-					case TweenType.easeInOutElastic:
-						newPosition = easeInOutElastic(startValue, endValue, (unscaleTimer / time));
-						break;
-				}
-
+				newPosition = TweenValue(tweenType, startValue, endValue, unscaleTimer / time);
 
 				OnChangedPosition(newPosition, upDir);
+				//m_Target.SetPosition(newPosition, upDir);
 
-//				if (loop)
-//				{
-//					// if we are looping, we need to make sure the new position isn't past the jump trigger.
-//					// if it is we need to reset back to the jump position on the other side of the area.
-//
-//					if (end > start && newPosition > _loopLastJumpTrigger)
-//					{
-//						//Debug.Log("name: " + name + " went past the last jump trigger, looping back around");
-//						newPosition = _loopFirstScrollPosition + (newPosition - _loopLastJumpTrigger);
-//					}
-//					else if (start > end && newPosition < _loopFirstJumpTrigger)
-//					{
-//						//Debug.Log("name: " + name + " went past the first jump trigger, looping back around");
-//						newPosition = _loopLastScrollPosition - (_loopFirstJumpTrigger - newPosition);
-//					}
-//				}
-//
-//				// set the scroll position to the tweened position
-//				ScrollPosition = newPosition;
-
-				// increase the time elapsed
 				unscaleTimer += Time.unscaledDeltaTime;
-
 				yield return null;
 			}
 
 			// the time has expired, so we make sure the final scroll position
 			// is the actual end position.
-//			ScrollPosition = end;
 			OnChangedPosition(endValue, upDir);
+			//m_Target.SetPosition(endValue, upDir);
 		}
 
 		// the tween jump is complete, so we fire the delegate
@@ -381,7 +341,83 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 		StopSnapping();
 	}
 
-	private float linear(float start, float end, float val)
+	#region Tween Functions
+
+	float TweenValue(TweenType tweenType, float startValue, float endValue, float val)
+	{
+		switch (tweenType)
+		{
+			case TweenType.linear:
+				return Linear(startValue, endValue, val);
+			case TweenType.spring:
+				return spring(startValue, endValue, val);
+			case TweenType.easeInQuad:
+				return easeInQuad(startValue, endValue, val);
+			case TweenType.easeOutQuad:
+				return easeOutQuad(startValue, endValue, val);
+			case TweenType.easeInOutQuad:
+				return easeInOutQuad(startValue, endValue, val);
+			case TweenType.easeInCubic:
+				return easeInCubic(startValue, endValue, val);
+			case TweenType.easeOutCubic:
+				return easeOutCubic(startValue, endValue, val);
+			case TweenType.easeInOutCubic:
+				return easeInOutCubic(startValue, endValue, val);
+			case TweenType.easeInQuart:
+				return easeInQuart(startValue, endValue, val);
+			case TweenType.easeOutQuart:
+				return easeOutQuart(startValue, endValue, val);
+			case TweenType.easeInOutQuart:
+				return easeInOutQuart(startValue, endValue, val);
+			case TweenType.easeInQuint:
+				return easeInQuint(startValue, endValue, val);
+			case TweenType.easeOutQuint:
+				return easeOutQuint(startValue, endValue, val);
+			case TweenType.easeInOutQuint:
+				return easeInOutQuint(startValue, endValue, val);
+			case TweenType.easeInSine:
+				return easeInSine(startValue, endValue, val);
+			case TweenType.easeOutSine:
+				return easeOutSine(startValue, endValue, val);
+			case TweenType.easeInOutSine:
+				return easeInOutSine(startValue, endValue, val);
+			case TweenType.easeInExpo:
+				return easeInExpo(startValue, endValue, val);
+			case TweenType.easeOutExpo:
+				return easeOutExpo(startValue, endValue, val);
+			case TweenType.easeInOutExpo:
+				return easeInOutExpo(startValue, endValue, val);
+			case TweenType.easeInCirc:
+				return easeInCirc(startValue, endValue, val);
+			case TweenType.easeOutCirc:
+				return easeOutCirc(startValue, endValue, val);
+			case TweenType.easeInOutCirc:
+				return easeInOutCirc(startValue, endValue, val);
+			case TweenType.easeInBounce:
+				return easeInBounce(startValue, endValue, val);
+			case TweenType.easeOutBounce:
+				return easeOutBounce(startValue, endValue, val);
+			case TweenType.easeInOutBounce:
+				return easeInOutBounce(startValue, endValue, val);
+			case TweenType.easeInBack:
+				return easeInBack(startValue, endValue, val);
+			case TweenType.easeOutBack:
+				return easeOutBack(startValue, endValue, val);
+			case TweenType.easeInOutBack:
+				return easeInOutBack(startValue, endValue, val);
+			case TweenType.easeInElastic:
+				return easeInElastic(startValue, endValue, val);
+			case TweenType.easeOutElastic:
+				return easeOutElastic(startValue, endValue, val);
+			case TweenType.easeInOutElastic:
+				return easeInOutElastic(startValue, endValue, val);
+			default:
+				return endValue;
+		}
+	}
+
+
+	private float Linear(float start, float end, float val)
 	{
 		return Mathf.Lerp(start, end, val);
 	}
@@ -712,4 +748,5 @@ public class ScrollTweener : MonoBehaviour, IBeginDragHandler, IEndDragHandler, 
 		return a * Mathf.Pow(2, -10 * val) * Mathf.Sin((val * d - s) * (2 * Mathf.PI) / p) * 0.5f + end + start;
 	}
 
+	#endregion
 }

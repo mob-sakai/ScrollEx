@@ -4,7 +4,7 @@ using System.Collections;
 using System;
 using EnhancedUI;
 using UnityEngine.EventSystems;
-
+using TweenType = ScrollTweener.TweenType;
 
 namespace Mobcast.Coffee
 {
@@ -56,30 +56,31 @@ namespace Mobcast.Coffee
 	/// power in your application.
 	/// </summary>
 	[RequireComponent(typeof(ScrollRect))]
-	public class ScrollRectEx : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IScrollHandler
+	public class ScrollRectEx : MonoBehaviour
+//	, IBeginDragHandler, IEndDragHandler, IScrollHandler
 	{
 		int m_ScrollCount;
 		Coroutine m_CoTweening;
 
-		public void OnScroll (PointerEventData eventData)
-		{
-			StopTweening ();
-			m_ScrollCount = 10;
-			IsDragging = true;
-		}
-
-		public void OnBeginDrag (PointerEventData eventData)
-		{
-			StopTweening ();
-			m_ScrollCount = 0;
-			IsDragging = true;
-		}
-
-		public void OnEndDrag (PointerEventData eventData)
-		{
-			m_ScrollCount = 0;
-			IsDragging = false;
-		}
+//		public void OnScroll (PointerEventData eventData)
+//		{
+//			StopTweening ();
+//			m_ScrollCount = 10;
+//			IsDragging = true;
+//		}
+//
+//		public void OnBeginDrag (PointerEventData eventData)
+//		{
+//			StopTweening ();
+//			m_ScrollCount = 0;
+//			IsDragging = true;
+//		}
+//
+//		public void OnEndDrag (PointerEventData eventData)
+//		{
+//			m_ScrollCount = 0;
+//			IsDragging = false;
+//		}
 
 		/// <summary>
 		/// Gets the number of cells in a list of data
@@ -139,12 +140,12 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// The number of pixels between cell views, starting after the first cell view
 		/// </summary>
-		public float spacing;
+		public float spacing{get{return layoutGroupXXX.spacing;}}
 
 		/// <summary>
 		/// The padding inside of the scroller: top, bottom, left, right.
 		/// </summary>
-		public RectOffset padding;
+		public RectOffset padding{ get{ return layoutGroupXXX.padding;}}
 
 		/// <summary>
 		/// Whether the scroller should loop the cell views
@@ -161,14 +162,14 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Whether snapping is turned on
 		/// </summary>
-		public bool snapping;
+//		public bool snapping;
 
 		/// <summary>
 		/// This is the speed that will initiate the snap. When the
 		/// scroller slows down to this speed it will snap to the location
 		/// specified.
 		/// </summary>
-		public float snapVelocityThreshold;
+//		public float snapVelocityThreshold;
 
 		/// <summary>
 		/// The snap offset to watch for. When the snap occurs, this
@@ -180,7 +181,7 @@ namespace Mobcast.Coffee
 		/// will be the same, they are just separated in case you need
 		/// that added functionality.
 		/// </summary>
-		public float snapWatchOffset;
+//		public float snapWatchOffset;
 
 		/// <summary>
 		/// The snap location to move the cell to. When the snap occurs,
@@ -192,7 +193,7 @@ namespace Mobcast.Coffee
 		/// will be the same, they are just separated in case you need
 		/// that added functionality.
 		/// </summary>
-		public float snapJumpToOffset;
+//		public float snapJumpToOffset;
 
 		/// <summary>
 		/// Once the cell has been snapped to the scroller location, this
@@ -201,13 +202,13 @@ namespace Mobcast.Coffee
 		/// Typically, the offset is in the range 0..1, with 0 being
 		/// the top / left of the cell and 1 being the bottom / right.
 		/// </summary>
-		public float snapCellCenterOffset;
+//		public float snapCellCenterOffset;
 
 		/// <summary>
 		/// Whether to include the spacing between cells when determining the
 		/// cell offset centering.
 		/// </summary>
-		public bool snapUseCellSpacing;
+//		public bool snapUseCellSpacing;
 
 		/// <summary>
 		/// What function to use when interpolating between the current 
@@ -215,7 +216,7 @@ namespace Mobcast.Coffee
 		/// If you want to go immediately to the snap location you can either 
 		/// set the snapTweenType to immediate or set the snapTweenTime to zero.
 		/// </summary>
-		public TweenType snapTweenType;
+//		public TweenType snapTweenType;
 
 		/// <summary>
 		/// The time it takes to interpolate between the current scroll 
@@ -223,7 +224,7 @@ namespace Mobcast.Coffee
 		/// If you want to go immediately to the snap location you can either 
 		/// set the snapTweenType to immediate or set the snapTweenTime to zero.
 		/// </summary>
-		public float snapTweenTime;
+//		public float snapTweenTime;
 
 		/// <summary>
 		/// This delegate is called when a cell view is hidden or shown
@@ -238,22 +239,22 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// This delegate is called when the scroll rect scrolls
 		/// </summary>
-		public ScrollerScrolledDelegate scrollerScrolled;
+//		public ScrollerScrolledDelegate scrollerScrolled;
 
 		/// <summary>
 		/// This delegate is called when the scroller has snapped to a position
 		/// </summary>
-		public ScrollerSnappedDelegate scrollerSnapped;
+//		public ScrollerSnappedDelegate scrollerSnapped;
 
 		/// <summary>
 		/// This delegate is called when the scroller has started or stopped scrolling
 		/// </summary>
-		public ScrollerScrollingChangedDelegate scrollerScrollingChanged;
+//		public ScrollerScrollingChangedDelegate scrollerScrollingChanged;
 
 		/// <summary>
 		/// This delegate is called when the scroller has started or stopped tweening
 		/// </summary>
-		public ScrollerTweeningChangedDelegate scrollerTweeningChanged;
+//		public ScrollerTweeningChangedDelegate scrollerTweeningChanged;
 
 		/// <summary>
 		/// The Delegate is what the scroller will call when it needs to know information about
@@ -273,7 +274,17 @@ namespace Mobcast.Coffee
 			set
 			{
 				// make sure the position is in the bounds of the current set of views
-				value = Mathf.Clamp(value, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
+				if(!Loop)
+				{
+					var min = -ScrollRectSize;
+					var max = GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before) + ScrollRectSize;
+					if (value < min || max < value)
+					{
+						value = Mathf.Clamp(value, min, max);
+						scrollRectXXX.velocity = Vector2.zero;
+					}
+//					value = Mathf.Clamp(value, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
+				}
 
 				// only if the value has changed
 				if (_scrollPosition != value)
@@ -398,26 +409,26 @@ namespace Mobcast.Coffee
 		/// The linear velocity is the velocity on one axis.
 		/// The scroller should only be moving one one axix.
 		/// </summary>
-		public float LinearVelocity
-		{
-			get
-			{
-				// return the velocity component depending on which direction this is scrolling
-				return (m_ScrollRect.vertical ? m_ScrollRect.velocity.y : m_ScrollRect.velocity.x);
-			}
-			set
-			{
-				// set the appropriate component of the velocity
-				if (m_ScrollRect.vertical)
-				{
-					m_ScrollRect.velocity = new Vector2(0, value);
-				}
-				else
-				{
-					m_ScrollRect.velocity = new Vector2(value, 0);
-				}
-			}
-		}
+//		public float LinearVelocity
+//		{
+//			get
+//			{
+//				// return the velocity component depending on which direction this is scrolling
+//				return (m_ScrollRect.vertical ? m_ScrollRect.velocity.y : m_ScrollRect.velocity.x);
+//			}
+//			set
+//			{
+//				// set the appropriate component of the velocity
+//				if (m_ScrollRect.vertical)
+//				{
+//					m_ScrollRect.velocity = new Vector2(0, value);
+//				}
+//				else
+//				{
+//					m_ScrollRect.velocity = new Vector2(value, 0);
+//				}
+//			}
+//		}
 
 		/// <summary>
 		/// Whether the scroller is scrolling or not
@@ -436,10 +447,10 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Whether the scroller is tweening or not
 		/// </summary>
-		public bool IsTweening
-		{
-			get; private set;
-		}
+//		public bool IsTweening
+//		{
+//			get; private set;
+//		}
 
 		/// <summary>
 		/// This is the first cell view index showing in the scroller's visible area
@@ -627,15 +638,15 @@ namespace Mobcast.Coffee
 			_recycledCellViews.Clear();
 		}
 
-		/// <summary>
-		/// Turn looping on or off. This is just a helper function so 
-		/// you don't have to keep track of the state of the looping
-		/// in your own scripts.
-		/// </summary>
-		public void ToggleLoop()
-		{
-			Loop = !loop;
-		}
+//		/// <summary>
+//		/// Turn looping on or off. This is just a helper function so 
+//		/// you don't have to keep track of the state of the looping
+//		/// in your own scripts.
+//		/// </summary>
+//		public void ToggleLoop()
+//		{
+//			Loop = !loop;
+//		}
 
 
 		/// <summary>
@@ -645,7 +656,6 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public void SetPosition(float value, float dir)
 		{
-
 			if (loop)
 			{
 				// if we are looping, we need to make sure the new position isn't past the jump trigger.
@@ -665,6 +675,19 @@ namespace Mobcast.Coffee
 			
 			// set the scroll position to the tweened position
 			ScrollPosition = value;
+		}
+
+
+		public void JumpToDataIndex(int dataIndex,
+			ScrollTweener.Alignment align,
+			TweenType tweenType = TweenType.immediate,
+			float tweenTime = 0f,
+			Action jumpComplete = null
+		)
+		{
+			float offset = (int)align * 0.5f;
+			bool useSpacing = align == ScrollTweener.Alignment.Center;
+			JumpToDataIndex(dataIndex, offset, offset, useSpacing, tweenType, tweenTime, jumpComplete);
 		}
 
 		/// <summary>
@@ -761,18 +784,28 @@ namespace Mobcast.Coffee
 				newScrollPosition = GetScrollPositionForDataIndex(dataIndex, CellViewPositionEnum.Before) + offset;
 			}
 
+
+
 			// clamp the scroll position to a valid location
-			newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
+//			newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
 
 			// if spacing is used, adjust the final position
 			if (useSpacing)
 			{
+				newScrollPosition -= spacing;
 				// move back by the spacing if necessary
-				newScrollPosition = Mathf.Clamp(newScrollPosition - spacing, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
+//				newScrollPosition = Mathf.Clamp(newScrollPosition - spacing, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
 			}
 
+			if (scrollRectXXX.movementType == ScrollRect.MovementType.Clamped)
+			{
+				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
+			}
+
+			scrollSnap.StartSnapping(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete, null);
+
 			// start tweening
-			m_CoTweening = StartCoroutine(TweenPosition(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete));
+//			m_CoTweening = StartCoroutine(TweenPosition(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete));
 		}
 
 		/// <summary>
@@ -784,17 +817,19 @@ namespace Mobcast.Coffee
 			if (NumberOfCells == 0) return;
 
 			// set snap jumping to true so other events won't process while tweening
-			_snapJumping = true;
+//			_snapJumping = true;
 
 			// stop the scroller
-			LinearVelocity = 0;
+//			LinearVelocity = 0;
 
 			// cache the current inertia state and turn off inertia
-			_snapInertia = m_ScrollRect.inertia;
-			m_ScrollRect.inertia = false;
+//			_snapInertia = m_ScrollRect.inertia;
+//			m_ScrollRect.inertia = false;
+
 
 			// calculate the snap position
-			var snapPosition = ScrollPosition + (ScrollRectSize * Mathf.Clamp01(snapWatchOffset));
+//			var snapPosition = ScrollPosition + (ScrollRectSize * Mathf.Clamp01(scrollSnap.snapWatchOffset));
+			var snapPosition = ScrollPosition + (ScrollRectSize * Mathf.Clamp01((int)scrollSnap.alignment * 0.5f));
 
 			// get the cell view index of cell at the watch location
 			_snapCellViewIndex = GetCellViewIndexAtPosition(snapPosition);
@@ -803,7 +838,7 @@ namespace Mobcast.Coffee
 			_snapDataIndex = _snapCellViewIndex % NumberOfCells;
 
 			// jump the snapped cell to the jump offset location and center it on the cell offset
-			JumpToDataIndex(_snapDataIndex, snapJumpToOffset, snapCellCenterOffset, snapUseCellSpacing, snapTweenType, snapTweenTime, SnapJumpComplete);
+			JumpToDataIndex(_snapDataIndex, scrollSnap.alignment, scrollSnap.snapTweenType, scrollSnap.snapTweenTime, null);
 		}
 
 		/// <summary>
@@ -818,7 +853,7 @@ namespace Mobcast.Coffee
 
 			if (cellViewIndex == 0 && insertPosition == CellViewPositionEnum.Before)
 			{
-				return 0;
+				return m_ScrollRect.vertical ? padding.top : padding.left;
 			}
 			else
 			{
@@ -1024,31 +1059,10 @@ namespace Mobcast.Coffee
 		private int _snapDataIndex;
 
 		/// <summary>
-		/// Whether we are currently jumping due to a snap
-		/// </summary>
-		private bool _snapJumping;
-
-		/// <summary>
-		/// What the previous inertia setting was before the snap jump.
-		/// We cache it here because we need to turn off inertia while
-		/// manually tweeing.
-		/// </summary>
-		private bool _snapInertia;
-
-		/// <summary>
 		/// The cached value of the last scrollbar visibility setting. This is checked every
 		/// frame to see if the scrollbar visibility needs to be changed.
 		/// </summary>
 		private ScrollRect.ScrollbarVisibility _lastScrollbarVisibility;
-
-		/// <summary>
-		/// Where in the list we are
-		/// </summary>
-		private enum ListPositionEnum
-		{
-			First,
-			Last
-		}
 
 		/// <summary>
 		/// The size of the active cell view container minus the visibile portion
@@ -1248,7 +1262,7 @@ namespace Mobcast.Coffee
 
 				for (i = startIndex; i <= endIndex; i++)
 				{
-					_AddCellView(i, ListPositionEnum.Last);
+					_AddCellView(i, false);
 				}
 			}
 			else
@@ -1263,7 +1277,7 @@ namespace Mobcast.Coffee
 				{
 					if (i < remainingCellIndices.First())
 					{
-						_AddCellView(i, ListPositionEnum.First);
+						_AddCellView(i, true);
 					}
 				}
 
@@ -1274,7 +1288,7 @@ namespace Mobcast.Coffee
 				{
 					if (i > remainingCellIndices.Last())
 					{
-						_AddCellView(i, ListPositionEnum.Last);
+						_AddCellView(i, false);
 					}
 				}
 			}
@@ -1327,7 +1341,7 @@ namespace Mobcast.Coffee
 		/// </summary>
 		/// <param name="cellIndex">The index of the cell view</param>
 		/// <param name="listPosition">Whether to add the cell to the beginning or the end</param>
-		private void _AddCellView(int cellIndex, ListPositionEnum listPosition)
+		private void _AddCellView(int cellIndex, bool atStart)
 		{
 			if (NumberOfCells == 0) return;
 
@@ -1356,16 +1370,13 @@ namespace Mobcast.Coffee
 				layoutElement.minWidth = _cellViewSizeArray[cellIndex] - (cellIndex > 0 ? _layoutGroup.spacing : 0);
 
 			// add the cell to the active list
-			if (listPosition == ListPositionEnum.First)
+			if (atStart)
 				_activeCellViews.AddStart(cellView);
 			else
 				_activeCellViews.Add(cellView);
 
 			// set the hierarchy position of the cell view in the container
-			if (listPosition == ListPositionEnum.Last)
-				cellView.transform.SetSiblingIndex(_container.childCount - 2);
-			else if (listPosition == ListPositionEnum.First)
-				cellView.transform.SetSiblingIndex(1);
+			cellView.transform.SetSiblingIndex(atStart ? 1 : _container.childCount - 2);
 
 			// call the visibility change delegate if available
 			if (cellViewVisibilityChanged != null) cellViewVisibilityChanged(cellView);
@@ -1619,18 +1630,6 @@ namespace Mobcast.Coffee
 			_container = contentXXX;
 			_layoutGroup = layoutGroupXXX;
 			_scrollbar = scrollbarXXX;
-//
-//			// destroy any content objects if they exist. Likely there will be
-//			// one at design time because Unity gives errors if it can't find one.
-//			if (m_ScrollRect.content != null)
-//			{
-//				DestroyImmediate(m_ScrollRect.content.gameObject);
-//			}
-//
-//			// Create a new active cell view container.
-//			go = new GameObject("Container", typeof(RectTransform));
-//			go.transform.SetParent(m_ScrollRectTransform);
-//			_container = go.GetComponent<RectTransform>();
 
 			// force the scroller to scroll in the direction we want
 			// set the containers anchor and pivot
@@ -1640,9 +1639,7 @@ namespace Mobcast.Coffee
 				_container.anchorMin = new Vector2(0, 1);
 				_container.anchorMax = Vector2.one;
 				_container.pivot = new Vector2(0.5f, 1f);
-//				_scrollbar = m_ScrollRect.verticalScrollbar;
 				_scrollbarVisibility = m_ScrollRect.verticalScrollbarVisibility;
-//				go.AddComponent<VerticalLayoutGroup>();
 			}
 			else
 			{
@@ -1650,9 +1647,7 @@ namespace Mobcast.Coffee
 				_container.anchorMin = Vector2.zero;
 				_container.anchorMax = new Vector2(0, 1f);
 				_container.pivot = new Vector2(0, 0.5f);
-//				_scrollbar = m_ScrollRect.horizontalScrollbar;
 				_scrollbarVisibility = m_ScrollRect.horizontalScrollbarVisibility;
-//				go.AddComponent<HorizontalLayoutGroup>();
 			}
 
 			_container.offsetMax = Vector2.zero;
@@ -1663,10 +1658,6 @@ namespace Mobcast.Coffee
 
 			m_ScrollRect.content = _container;
 
-			// cache the layout group and set up its spacing and padding
-//			_layoutGroup = _container.GetComponent<HorizontalOrVerticalLayoutGroup>();
-//			_layoutGroup.spacing = spacing;
-//			_layoutGroup.padding = padding;
 			_layoutGroup.childAlignment = TextAnchor.UpperLeft;
 			_layoutGroup.childForceExpandHeight = true;
 			_layoutGroup.childForceExpandWidth = true;
@@ -1692,7 +1683,37 @@ namespace Mobcast.Coffee
 			_lastScrollbarVisibility = _scrollbarVisibility;
 		}
 
-		protected virtual void Update()
+//		protected virtual void Update()
+//		{
+//			if (_reloadData)
+//			{
+//				// if the reload flag is true, then reload the data
+//				ReloadData();
+//			}
+//
+//			// if the scroll rect size has changed and looping is on,
+//			// or the loop setting has changed, then we need to resize
+//			if (
+//				(loop && _lastScrollRectSize != ScrollRectSize)
+//				||
+//				(loop != _lastLoop)
+//			)
+//			{
+//				_Resize(true);
+//				_lastScrollRectSize = ScrollRectSize;
+//
+//				_lastLoop = loop;
+//			}
+//
+//			// update the scroll bar visibility if it has changed
+//			if (_lastScrollbarVisibility != _scrollbarVisibility)
+//			{
+//				ScrollbarVisibility = _scrollbarVisibility;
+//				_lastScrollbarVisibility = _scrollbarVisibility;
+//			}
+//		}
+
+		void LateUpdate()
 		{
 			if (_reloadData)
 			{
@@ -1722,37 +1743,11 @@ namespace Mobcast.Coffee
 			}
 
 
-			// determine if the scroller has started or stopped scrolling
-			// and call the delegate if so.
-			if (LinearVelocity != 0 && !IsScrolling)
-			{
-				IsScrolling = true;
-				if (scrollerScrollingChanged != null) scrollerScrollingChanged(this, true);
-			}
-			else if (LinearVelocity == 0 && IsScrolling)
-			{
-				IsScrolling = false;
-				if (scrollerScrollingChanged != null) scrollerScrollingChanged(this, false);
-			}
-		}
 
-		void LateUpdate()
-		{
+
 			if (_refreshActive)
 			{
-				// if the refresh toggle is on, then
-				// refresh the list
 				_RefreshActive();
-			}
-
-//			IsDragging = false;
-//			if (IsDragging)
-//				Debug.Log ("IsDragging is true");
-//			isScrollHandling = false;
-			if (0 < m_ScrollCount && --m_ScrollCount == 0) {
-				IsDragging = false;
-				Debug.Log ("Scroll End!!!" + m_ScrollCount);
-				m_ScrollRect.onValueChanged.Invoke (m_ScrollRect.normalizedPosition);
 			}
 		}
 
@@ -1776,530 +1771,12 @@ namespace Mobcast.Coffee
 		{
 			// set the internal scroll position
 			if (m_ScrollRect.vertical)
-				_scrollPosition = (1f - val.y) * _ScrollSize;
+				ScrollPosition = (1f - val.y) * _ScrollSize;
 			else
-				_scrollPosition = val.x * _ScrollSize;
+				ScrollPosition = val.x * _ScrollSize;
 			_refreshActive = true;
 
-			// call the handler if it exists
-			if (scrollerScrolled != null) scrollerScrolled(this, val, _scrollPosition);
-
-			// if the snapping is turned on, handle it
-			if (snapping && !_snapJumping)
-			{
-				// if the speed has dropped below the threshhold velocity
-//				Debug.Log(LinearVelocity + ", " + IsDragging + ", " + scrollCount);
-				if (Mathf.Abs(LinearVelocity) <= snapVelocityThreshold && !IsDragging)
-				{
-					// Call the snap function
-					Snap();
-				}
-			}
-
 			_RefreshActive();
-
-		}
-
-		/// <summary>
-		/// This is fired by the tweener when the snap tween is completed
-		/// </summary>
-		private void SnapJumpComplete()
-		{
-			// reset the snap jump to false and restore the inertia state
-			_snapJumping = false;
-			m_ScrollRect.inertia = _snapInertia;
-
-			// fire the scroller snapped delegate
-			if (scrollerSnapped != null) scrollerSnapped(this, _snapCellViewIndex, _snapDataIndex);
-		}
-
-		#endregion
-
-		#region Tweening
-
-		/// <summary>
-		/// The easing type
-		/// </summary>
-		public enum TweenType
-		{
-			immediate,
-			linear,
-			spring,
-			easeInQuad,
-			easeOutQuad,
-			easeInOutQuad,
-			easeInCubic,
-			easeOutCubic,
-			easeInOutCubic,
-			easeInQuart,
-			easeOutQuart,
-			easeInOutQuart,
-			easeInQuint,
-			easeOutQuint,
-			easeInOutQuint,
-			easeInSine,
-			easeOutSine,
-			easeInOutSine,
-			easeInExpo,
-			easeOutExpo,
-			easeInOutExpo,
-			easeInCirc,
-			easeOutCirc,
-			easeInOutCirc,
-			easeInBounce,
-			easeOutBounce,
-			easeInOutBounce,
-			easeInBack,
-			easeOutBack,
-			easeInOutBack,
-			easeInElastic,
-			easeOutElastic,
-			easeInOutElastic
-		}
-
-		private float _tweenTimeLeft;
-
-		void StopTweening()
-		{
-			if (m_CoTweening != null)
-			{
-				StopCoroutine (m_CoTweening);
-				m_CoTweening = null;
-
-				// fire the delegate for the tween ending
-				IsTweening = false;
-				if (scrollerTweeningChanged != null) scrollerTweeningChanged(this, false);
-
-				_snapJumping = false;
-				m_ScrollRect.inertia = _snapInertia;
-			}
-		}
-
-		/// <summary>
-		/// Moves the scroll position over time between two points given an easing function. When the
-		/// tween is complete it will fire the jumpComplete delegate.
-		/// </summary>
-		/// <param name="tweenType">The type of easing to use</param>
-		/// <param name="time">The amount of time to interpolate</param>
-		/// <param name="start">The starting scroll position</param>
-		/// <param name="end">The ending scroll position</param>
-		/// <param name="jumpComplete">The action to fire when the tween is complete</param>
-		/// <returns></returns>
-		IEnumerator TweenPosition(TweenType tweenType, float time, float start, float end, Action tweenComplete)
-		{
-			StopTweening ();
-			if (tweenType == TweenType.immediate || time == 0)
-			{
-				// if the easing is immediate or the time is zero, just jump to the end position
-				ScrollPosition = end;
-			}
-			else
-			{
-				// zero out the velocity
-				m_ScrollRect.velocity = Vector2.zero;
-
-				// fire the delegate for the tween start
-				IsTweening = true;
-				if (scrollerTweeningChanged != null) scrollerTweeningChanged(this, true);
-
-				_tweenTimeLeft = 0;
-				var newPosition = 0f;
-
-				// while the tween has time left, use an easing function
-				while (_tweenTimeLeft < time)
-				{
-					switch (tweenType)
-					{
-					case TweenType.linear: newPosition = linear(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.spring: newPosition = spring(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInQuad: newPosition = easeInQuad(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutQuad: newPosition = easeOutQuad(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutQuad: newPosition = easeInOutQuad(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInCubic: newPosition = easeInCubic(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutCubic: newPosition = easeOutCubic(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutCubic: newPosition = easeInOutCubic(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInQuart: newPosition = easeInQuart(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutQuart: newPosition = easeOutQuart(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutQuart: newPosition = easeInOutQuart(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInQuint: newPosition = easeInQuint(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutQuint: newPosition = easeOutQuint(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutQuint: newPosition = easeInOutQuint(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInSine: newPosition = easeInSine(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutSine: newPosition = easeOutSine(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutSine: newPosition = easeInOutSine(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInExpo: newPosition = easeInExpo(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutExpo: newPosition = easeOutExpo(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutExpo: newPosition = easeInOutExpo(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInCirc: newPosition = easeInCirc(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutCirc: newPosition = easeOutCirc(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutCirc: newPosition = easeInOutCirc(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInBounce: newPosition = easeInBounce(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutBounce: newPosition = easeOutBounce(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutBounce: newPosition = easeInOutBounce(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInBack: newPosition = easeInBack(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutBack: newPosition = easeOutBack(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutBack: newPosition = easeInOutBack(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInElastic: newPosition = easeInElastic(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeOutElastic: newPosition = easeOutElastic(start, end, (_tweenTimeLeft / time)); break;
-					case TweenType.easeInOutElastic: newPosition = easeInOutElastic(start, end, (_tweenTimeLeft / time)); break;
-					}
-
-					if (loop)
-					{
-						// if we are looping, we need to make sure the new position isn't past the jump trigger.
-						// if it is we need to reset back to the jump position on the other side of the area.
-
-						if (end > start && newPosition > _loopLastJumpTrigger)
-						{
-							//Debug.Log("name: " + name + " went past the last jump trigger, looping back around");
-							newPosition = _loopFirstScrollPosition + (newPosition - _loopLastJumpTrigger);
-						}
-						else if (start > end && newPosition < _loopFirstJumpTrigger)
-						{
-							//Debug.Log("name: " + name + " went past the first jump trigger, looping back around");
-							newPosition = _loopLastScrollPosition - (_loopFirstJumpTrigger - newPosition);
-						}
-					}
-
-					// set the scroll position to the tweened position
-					ScrollPosition = newPosition;
-
-					// increase the time elapsed
-					_tweenTimeLeft += Time.unscaledDeltaTime;
-
-					yield return null;
-				}
-
-				// the time has expired, so we make sure the final scroll position
-				// is the actual end position.
-				ScrollPosition = end;
-			}
-
-			// the tween jump is complete, so we fire the delegate
-			if (tweenComplete != null) tweenComplete();
-
-//			// fire the delegate for the tween ending
-//			IsTweening = false;
-//			if (scrollerTweeningChanged != null) scrollerTweeningChanged(this, false);
-
-			StopTweening ();
-		}
-
-		private float linear(float start, float end, float val)
-		{
-			return Mathf.Lerp(start, end, val);
-		}
-
-		private static float spring(float start, float end, float val)
-		{
-			val = Mathf.Clamp01(val);
-			val = (Mathf.Sin(val * Mathf.PI * (0.2f + 2.5f * val * val * val)) * Mathf.Pow(1f - val, 2.2f) + val) * (1f + (1.2f * (1f - val)));
-			return start + (end - start) * val;
-		}
-
-		private static float easeInQuad(float start, float end, float val)
-		{
-			end -= start;
-			return end * val * val + start;
-		}
-
-		private static float easeOutQuad(float start, float end, float val)
-		{
-			end -= start;
-			return -end * val * (val - 2) + start;
-		}
-
-		private static float easeInOutQuad(float start, float end, float val)
-		{
-			val /= .5f;
-			end -= start;
-			if (val < 1) return end / 2 * val * val + start;
-			val--;
-			return -end / 2 * (val * (val - 2) - 1) + start;
-		}
-
-		private static float easeInCubic(float start, float end, float val)
-		{
-			end -= start;
-			return end * val * val * val + start;
-		}
-
-		private static float easeOutCubic(float start, float end, float val)
-		{
-			val--;
-			end -= start;
-			return end * (val * val * val + 1) + start;
-		}
-
-		private static float easeInOutCubic(float start, float end, float val)
-		{
-			val /= .5f;
-			end -= start;
-			if (val < 1) return end / 2 * val * val * val + start;
-			val -= 2;
-			return end / 2 * (val * val * val + 2) + start;
-		}
-
-		private static float easeInQuart(float start, float end, float val)
-		{
-			end -= start;
-			return end * val * val * val * val + start;
-		}
-
-		private static float easeOutQuart(float start, float end, float val)
-		{
-			val--;
-			end -= start;
-			return -end * (val * val * val * val - 1) + start;
-		}
-
-		private static float easeInOutQuart(float start, float end, float val)
-		{
-			val /= .5f;
-			end -= start;
-			if (val < 1) return end / 2 * val * val * val * val + start;
-			val -= 2;
-			return -end / 2 * (val * val * val * val - 2) + start;
-		}
-
-		private static float easeInQuint(float start, float end, float val)
-		{
-			end -= start;
-			return end * val * val * val * val * val + start;
-		}
-
-		private static float easeOutQuint(float start, float end, float val)
-		{
-			val--;
-			end -= start;
-			return end * (val * val * val * val * val + 1) + start;
-		}
-
-		private static float easeInOutQuint(float start, float end, float val)
-		{
-			val /= .5f;
-			end -= start;
-			if (val < 1) return end / 2 * val * val * val * val * val + start;
-			val -= 2;
-			return end / 2 * (val * val * val * val * val + 2) + start;
-		}
-
-		private static float easeInSine(float start, float end, float val)
-		{
-			end -= start;
-			return -end * Mathf.Cos(val / 1 * (Mathf.PI / 2)) + end + start;
-		}
-
-		private static float easeOutSine(float start, float end, float val)
-		{
-			end -= start;
-			return end * Mathf.Sin(val / 1 * (Mathf.PI / 2)) + start;
-		}
-
-		private static float easeInOutSine(float start, float end, float val)
-		{
-			end -= start;
-			return -end / 2 * (Mathf.Cos(Mathf.PI * val / 1) - 1) + start;
-		}
-
-		private static float easeInExpo(float start, float end, float val)
-		{
-			end -= start;
-			return end * Mathf.Pow(2, 10 * (val / 1 - 1)) + start;
-		}
-
-		private static float easeOutExpo(float start, float end, float val)
-		{
-			end -= start;
-			return end * (-Mathf.Pow(2, -10 * val / 1) + 1) + start;
-		}
-
-		private static float easeInOutExpo(float start, float end, float val)
-		{
-			val /= .5f;
-			end -= start;
-			if (val < 1) return end / 2 * Mathf.Pow(2, 10 * (val - 1)) + start;
-			val--;
-			return end / 2 * (-Mathf.Pow(2, -10 * val) + 2) + start;
-		}
-
-		private static float easeInCirc(float start, float end, float val)
-		{
-			end -= start;
-			return -end * (Mathf.Sqrt(1 - val * val) - 1) + start;
-		}
-
-		private static float easeOutCirc(float start, float end, float val)
-		{
-			val--;
-			end -= start;
-			return end * Mathf.Sqrt(1 - val * val) + start;
-		}
-
-		private static float easeInOutCirc(float start, float end, float val)
-		{
-			val /= .5f;
-			end -= start;
-			if (val < 1) return -end / 2 * (Mathf.Sqrt(1 - val * val) - 1) + start;
-			val -= 2;
-			return end / 2 * (Mathf.Sqrt(1 - val * val) + 1) + start;
-		}
-
-		private static float easeInBounce(float start, float end, float val)
-		{
-			end -= start;
-			float d = 1f;
-			return end - easeOutBounce(0, end, d - val) + start;
-		}
-
-		private static float easeOutBounce(float start, float end, float val)
-		{
-			val /= 1f;
-			end -= start;
-			if (val < (1 / 2.75f))
-			{
-				return end * (7.5625f * val * val) + start;
-			}
-			else if (val < (2 / 2.75f))
-			{
-				val -= (1.5f / 2.75f);
-				return end * (7.5625f * (val) * val + .75f) + start;
-			}
-			else if (val < (2.5 / 2.75))
-			{
-				val -= (2.25f / 2.75f);
-				return end * (7.5625f * (val) * val + .9375f) + start;
-			}
-			else
-			{
-				val -= (2.625f / 2.75f);
-				return end * (7.5625f * (val) * val + .984375f) + start;
-			}
-		}
-
-		private static float easeInOutBounce(float start, float end, float val)
-		{
-			end -= start;
-			float d = 1f;
-			if (val < d / 2) return easeInBounce(0, end, val * 2) * 0.5f + start;
-			else return easeOutBounce(0, end, val * 2 - d) * 0.5f + end * 0.5f + start;
-		}
-
-		private static float easeInBack(float start, float end, float val)
-		{
-			end -= start;
-			val /= 1;
-			float s = 1.70158f;
-			return end * (val) * val * ((s + 1) * val - s) + start;
-		}
-
-		private static float easeOutBack(float start, float end, float val)
-		{
-			float s = 1.70158f;
-			end -= start;
-			val = (val / 1) - 1;
-			return end * ((val) * val * ((s + 1) * val + s) + 1) + start;
-		}
-
-		private static float easeInOutBack(float start, float end, float val)
-		{
-			float s = 1.70158f;
-			end -= start;
-			val /= .5f;
-			if ((val) < 1)
-			{
-				s *= (1.525f);
-				return end / 2 * (val * val * (((s) + 1) * val - s)) + start;
-			}
-			val -= 2;
-			s *= (1.525f);
-			return end / 2 * ((val) * val * (((s) + 1) * val + s) + 2) + start;
-		}
-
-		private static float easeInElastic(float start, float end, float val)
-		{
-			end -= start;
-
-			float d = 1f;
-			float p = d * .3f;
-			float s = 0;
-			float a = 0;
-
-			if (val == 0) return start;
-			val = val / d;
-			if (val == 1) return start + end;
-
-			if (a == 0f || a < Mathf.Abs(end))
-			{
-				a = end;
-				s = p / 4;
-			}
-			else
-			{
-				s = p / (2 * Mathf.PI) * Mathf.Asin(end / a);
-			}
-			val = val - 1;
-			return -(a * Mathf.Pow(2, 10 * val) * Mathf.Sin((val * d - s) * (2 * Mathf.PI) / p)) + start;
-		}
-
-		private static float easeOutElastic(float start, float end, float val)
-		{
-			end -= start;
-
-			float d = 1f;
-			float p = d * .3f;
-			float s = 0;
-			float a = 0;
-
-			if (val == 0) return start;
-
-			val = val / d;
-			if (val == 1) return start + end;
-
-			if (a == 0f || a < Mathf.Abs(end))
-			{
-				a = end;
-				s = p / 4;
-			}
-			else
-			{
-				s = p / (2 * Mathf.PI) * Mathf.Asin(end / a);
-			}
-
-			return (a * Mathf.Pow(2, -10 * val) * Mathf.Sin((val * d - s) * (2 * Mathf.PI) / p) + end + start);
-		}
-
-		private static float easeInOutElastic(float start, float end, float val)
-		{
-			end -= start;
-
-			float d = 1f;
-			float p = d * .3f;
-			float s = 0;
-			float a = 0;
-
-			if (val == 0) return start;
-
-			val = val / (d / 2);
-			if (val == 2) return start + end;
-
-			if (a == 0f || a < Mathf.Abs(end))
-			{
-				a = end;
-				s = p / 4;
-			}
-			else
-			{
-				s = p / (2 * Mathf.PI) * Mathf.Asin(end / a);
-			}
-
-			if (val < 1)
-			{
-				val = val - 1;
-				return -0.5f * (a * Mathf.Pow(2, 10 * val) * Mathf.Sin((val * d - s) * (2 * Mathf.PI) / p)) + start;
-			}
-			val = val - 1;
-			return a * Mathf.Pow(2, -10 * val) * Mathf.Sin((val * d - s) * (2 * Mathf.PI) / p) * 0.5f + end + start;
 		}
 
 		#endregion
