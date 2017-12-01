@@ -1971,7 +1971,6 @@ GameObject:
   - 114: {fileID: 1665869767}
   - 114: {fileID: 1665869771}
   - 114: {fileID: 1665869766}
-  - 114: {fileID: 1665869772}
   m_Layer: 5
   m_Name: Scroller
   m_TagString: Untagged
@@ -1993,14 +1992,14 @@ MonoBehaviour:
   m_Content: {fileID: 1866022810}
   m_Horizontal: 0
   m_Vertical: 1
-  m_MovementType: 1
+  m_MovementType: 0
   m_Elasticity: 0.1
   m_Inertia: 1
   m_DecelerationRate: 0.135
   m_ScrollSensitivity: 20
   m_Viewport: {fileID: 0}
   m_HorizontalScrollbar: {fileID: 0}
-  m_VerticalScrollbar: {fileID: 0}
+  m_VerticalScrollbar: {fileID: 109139093}
   m_HorizontalScrollbarVisibility: 0
   m_VerticalScrollbarVisibility: 0
   m_HorizontalScrollbarSpacing: 0
@@ -2048,8 +2047,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45a033e20f7aa42088202d1380c3c629, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  loop: 0
-  _layoutGroup: {fileID: 0}
+  m_ScrollSnap:
+    m_SnapOnEndDrag: 1
+    m_Alignment: 1
+    m_ThresholdVerocity: 200
+    m_Method: 16
+    m_Duration: 0.5
+  m_Loop: 0
   cellViewPrefab: {fileID: 434124302}
 --- !u!222 &1665869769
 CanvasRenderer:
@@ -2087,26 +2091,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 0
---- !u!114 &1665869772
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1665869765}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 15746f3cb4213495aa881bb832d7ca99, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_TriggerSnap: 0
-  m_TriggerOnEndDrag: 1
-  snapVelocityThreshold: 100
-  snapWatchOffset: 0.5
-  snapJumpToOffset: 0.5
-  snapCellCenterOffset: 0.5
-  snapUseCellSpacing: 0
-  snapTweenType: 1
-  snapTweenTime: 1
 --- !u!1 &1811721372
 GameObject:
   m_ObjectHideFlags: 0
@@ -2302,8 +2286,8 @@ MonoBehaviour:
   m_Padding:
     m_Left: 0
     m_Right: 0
-    m_Top: 400
-    m_Bottom: 400
+    m_Top: 100
+    m_Bottom: 100
   m_ChildAlignment: 0
   m_Spacing: 30
   m_ChildForceExpandWidth: 1

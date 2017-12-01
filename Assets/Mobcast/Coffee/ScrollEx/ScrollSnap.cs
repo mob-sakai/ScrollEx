@@ -109,13 +109,13 @@ namespace Mobcast.Coffee
 
 		public bool running { get { return m_CoTweening != null; } }
 
-		public void StartSnapping(Method tweenType, float time, float startValue, float endValue, Action onComplete, Func<float> onChangedPosition)
+		public void StartSnapping(Method tweenType, float time, float startValue, float endValue)
 		{
 			StopSnapping();
-			m_CoTweening = (m_Target as MonoBehaviour).StartCoroutine(Co_Snap(tweenType, time, startValue, endValue, onComplete, onChangedPosition));
+			m_CoTweening = (m_Target as MonoBehaviour).StartCoroutine(Co_Snap(tweenType, time, startValue, endValue));
 		}
 
-		IEnumerator Co_Snap(Method tweenType, float time, float startValue, float endValue, Action onComplete, Func<float> onChangedPosition)
+		IEnumerator Co_Snap(Method tweenType, float time, float startValue, float endValue)
 		{
 			ScrollRect scrollRect = m_Target.scrollRect;
 			float upDir = endValue - startValue;

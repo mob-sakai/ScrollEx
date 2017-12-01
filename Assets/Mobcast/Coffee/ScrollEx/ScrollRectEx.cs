@@ -30,6 +30,10 @@ namespace Mobcast.Coffee
 	[RequireComponent(typeof(ScrollRect))]
 	public class ScrollRectEx : MonoBehaviour, IScrollSnap
 	{
+
+
+
+
 		[SerializeField]
 		ScrollSnap m_ScrollSnap = new ScrollSnap();
 
@@ -119,8 +123,7 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Whether the scroller should loop the cell views.
 		/// </summary>
-		[SerializeField]
-		private bool m_Loop;
+		[SerializeField] bool m_Loop;
 
 		/// <summary>
 		/// Whether the scollbar should be shown
@@ -141,35 +144,31 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// The absolute position in pixels from the start of the scroller
 		/// </summary>
-		public float ScrollPosition
-		{
-			get { return _scrollPosition; }
-			set
-			{
-				// 非ループ時はオーバーランを防ぐためにスクロール制限をかけます.
-				if (!loop)
-				{
-					var min = -scrollRectSize;
-					var max = GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1) + scrollRectSize;
-					if (value < min || max < value)
-					{
-						value = Mathf.Clamp(value, min, max);
-						scrollRect.velocity = Vector2.zero;
-					}
-				}
-
-				// 座標が変更された時のみ、新しく座標を設定します.
-				if (0.01f < Mathf.Abs(_scrollPosition - value))
-				{
-					m_NeedRefleshActive = true;
-					_scrollPosition = value;
-					if (m_ScrollRect.vertical)
-						m_ScrollRect.verticalNormalizedPosition = 1f - (_scrollPosition / scrollSize);
-					else
-						m_ScrollRect.horizontalNormalizedPosition = (_scrollPosition / scrollSize);
-				}
-			}
-		}
+		public float scrollPosition { get { return m_ScrollPosition; } set { SetPositionWithDir(value, 0); } }
+//				// 非ループ時はオーバーランを防ぐためにスクロール制限をかけます.
+//				if (!loop)
+//				{
+//					var min = -scrollRectSize;
+//					var max = GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1) + scrollRectSize;
+//					if (value < min || max < value)
+//					{
+//						value = Mathf.Clamp(value, min, max);
+//						scrollRect.velocity = Vector2.zero;
+//					}
+//				}
+//
+//				// 座標が変更された時のみ、新しく座標を設定します.
+//				if (0.01f < Mathf.Abs(_scrollPosition - value))
+//				{
+//					m_NeedRefleshActive = true;
+//					_scrollPosition = value;
+//					if (m_ScrollRect.vertical)
+//						m_ScrollRect.verticalNormalizedPosition = 1f - (_scrollPosition / scrollSize);
+//					else
+//						m_ScrollRect.horizontalNormalizedPosition = (_scrollPosition / scrollSize);
+//				}
+//			}
+//		}
 
 		/// <summary>
 		/// Whether the scroller should loop the resulting cell views.
@@ -194,13 +193,13 @@ namespace Mobcast.Coffee
 				// get the original position so that when we turn looping on
 				// we can jump back to this position
 				// 
-				var oldPos = _scrollPosition;
+				var oldPos = m_ScrollPosition;
 
 
 				// call resize to generate more internal elements if loop is on,
 				// remove the elements if loop is off
 				_Resize(false);
-				ScrollPosition = m_Loop
+				scrollPosition = m_Loop
 					? _loopFirstScrollPosition + oldPos
 					: oldPos - _loopFirstScrollPosition;
 //					if (loop)
@@ -338,7 +337,7 @@ namespace Mobcast.Coffee
 			//if (Delegate != null)
 			_Resize(false);
 
-			_scrollPosition = scrollPositionFactor * scrollSize;
+			m_ScrollPosition = scrollPositionFactor * scrollSize;
 			if (m_ScrollRect.vertical)
 				m_ScrollRect.verticalNormalizedPosition = 1f - scrollPositionFactor;
 			else
@@ -401,6 +400,7 @@ namespace Mobcast.Coffee
 
 		public void SetPositionWithDir(float value, float dir)
 		{
+			// ループ時はループポイント跨ぎを考慮します.
 			if (loop)
 			{
 				if (0 < dir && value > _loopLastJumpTrigger)
@@ -408,21 +408,110 @@ namespace Mobcast.Coffee
 				else if (dir < 0 && value < _loopFirstJumpTrigger)
 					value = _loopLastScrollPosition - (_loopFirstJumpTrigger - value);
 			}
-			ScrollPosition = value;
+//			ScrollPosition = value;
+			// 非ループ時はオーバーランを防ぐためにスクロール制限をかけます.
+			else
+			{
+				var min = -scrollRectSize;
+				var max = GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1) + scrollRectSize;
+				if (value < min || max < value)
+				{
+					value = Mathf.Clamp(value, min, max);
+					scrollRect.velocity = Vector2.zero;
+				}
+			}
+
+			// 座標が変更された時のみ、新しく座標を設定します.
+			if (0.01f < Mathf.Abs(m_ScrollPosition - value))
+			{
+				m_NeedRefleshActive = true;
+				m_ScrollPosition = value;
+				if (m_ScrollRect.vertical)
+					m_ScrollRect.verticalNormalizedPosition = 1f - (m_ScrollPosition / scrollSize);
+				else
+					m_ScrollRect.horizontalNormalizedPosition = (m_ScrollPosition / scrollSize);
+			}
 		}
 
 
 		public void JumpToDataIndex(int dataIndex,
 		                            ScrollSnap.Alignment align,
 		                            Method tweenType = Method.immediate,
-		                            float tweenTime = 0f,
-		                            Action jumpComplete = null
+		                            float tweenTime = 0f
 		)
 		{
-			float offset = (int)align * 0.5f;
+			float normalizedOffset = (int)align * 0.5f;
 			bool useSpacing = align == ScrollSnap.Alignment.Center;
-			JumpToDataIndex(dataIndex, offset, offset, useSpacing, tweenType, tweenTime, jumpComplete);
+//			JumpToDataIndex(dataIndex, offset, offset, useSpacing, tweenType, tweenTime, jumpComplete);
+
+			var cellOffsetPosition = 0f;
+
+			if (normalizedOffset < 0 || 0 < normalizedOffset)
+			{
+				// calculate the cell offset position
+
+				// get the cell's size
+				var cellSize = GetCellViewSize(dataIndex);
+
+				if (useSpacing)
+				{
+					// if using spacing add spacing from one side
+					cellSize += spacing;
+
+					// if this is not a bounday cell, then add spacing from the other side
+					if (dataIndex > 0 && dataIndex < (cellCount - 1))
+						cellSize += spacing;
+				}
+
+				// calculate the position based on the size of the cell and the offset within that cell
+				cellOffsetPosition = cellSize * normalizedOffset;
+			}
+
+			var newScrollPosition = 0f;
+
+			// cache the offset for quicker calculation
+			var offset = -(normalizedOffset * scrollRectSize) + cellOffsetPosition;
+
+			if (loop)
+			{
+				// if looping, then we need to determine the closest jump position.
+				// we do that by checking all three sets of data locations, and returning the closest one
+
+				// get the scroll positions for each data set.
+				// Note: we are calculating the position based on the cell view index, not the data index here
+				var set1Position = GetScrollPositionForCellViewIndex(dataIndex) + offset;
+				var set2Position = GetScrollPositionForCellViewIndex(dataIndex + cellCount) + offset;
+				var set3Position = GetScrollPositionForCellViewIndex(dataIndex + cellCount * 2) + offset;
+
+				// get the offsets of each scroll position from the current scroll position
+				var set1Diff = (Mathf.Abs(m_ScrollPosition - set1Position));
+				var set2Diff = (Mathf.Abs(m_ScrollPosition - set2Position));
+				var set3Diff = (Mathf.Abs(m_ScrollPosition - set3Position));
+
+				// choose the smallest offset from the current position (the closest position)
+				newScrollPosition = set1Diff < set2Diff
+					? set1Diff < set3Diff ? set1Position : set3Position
+					: set2Diff < set3Diff ? set2Position : set3Position;
+			}
+			else
+			{
+				newScrollPosition = GetScrollPositionForDataIndex(dataIndex) + offset;
+			}
+
+
+			if (useSpacing)
+			{
+				newScrollPosition -= spacing;
+			}
+
+			if (scrollRect.movementType == ScrollRect.MovementType.Clamped)
+			{
+				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1));
+			}
+
+			m_ScrollSnap.StartSnapping(tweenType, tweenTime, scrollPosition, newScrollPosition);
 		}
+		/*
 
 		/// <summary>
 		/// Jump to a position in the scroller based on a dataIndex. This overload allows you
@@ -485,9 +574,9 @@ namespace Mobcast.Coffee
 				var set3Position = GetScrollPositionForCellViewIndex(dataIndex + cellCount * 2) + offset;
 
 				// get the offsets of each scroll position from the current scroll position
-				var set1Diff = (Mathf.Abs(_scrollPosition - set1Position));
-				var set2Diff = (Mathf.Abs(_scrollPosition - set2Position));
-				var set3Diff = (Mathf.Abs(_scrollPosition - set3Position));
+				var set1Diff = (Mathf.Abs(m_ScrollPosition - set1Position));
+				var set2Diff = (Mathf.Abs(m_ScrollPosition - set2Position));
+				var set3Diff = (Mathf.Abs(m_ScrollPosition - set3Position));
 
 				// choose the smallest offset from the current position (the closest position)
 				newScrollPosition = set1Diff < set2Diff
@@ -541,12 +630,13 @@ namespace Mobcast.Coffee
 				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1));
 			}
 
-			m_ScrollSnap.StartSnapping(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete, null);
+			m_ScrollSnap.StartSnapping(tweenType, tweenTime, scrollPosition, newScrollPosition, jumpComplete, null);
 //			scrollSnap.StartSnapping(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete, null);
 
 			// start tweening
 //			m_CoTweening = StartCoroutine(TweenPosition(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete));
 		}
+		*/
 
 		/// <summary>
 		/// Snaps the scroller on command. This is called internally when snapping is set to true and the velocity
@@ -558,11 +648,11 @@ namespace Mobcast.Coffee
 				return;
 
 			// スナップするインデックスを計算します.
-			var snapPosition = ScrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_ScrollSnap.m_Alignment * 0.5f));
+			var snapPosition = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_ScrollSnap.m_Alignment * 0.5f));
 			var snapCellViewIndex = _GetCellViewIndexAtPosition(snapPosition);
 			var snapDataIndex = snapCellViewIndex % cellCount;
 
-			JumpToDataIndex(snapDataIndex, m_ScrollSnap.m_Alignment, m_ScrollSnap.m_Method, m_ScrollSnap.m_Duration, null);
+			JumpToDataIndex(snapDataIndex, m_ScrollSnap.m_Alignment, m_ScrollSnap.m_Method, m_ScrollSnap.m_Duration);
 		}
 
 		/// <summary>
@@ -672,7 +762,7 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// The scrollers position
 		/// </summary>
-		private float _scrollPosition;
+		private float m_ScrollPosition;
 
 		/// <summary>
 		/// The list of cell views that are currently being displayed
@@ -761,7 +851,7 @@ namespace Mobcast.Coffee
 		private void _Resize(bool keepPosition)
 		{
 			// cache the original position
-			var originalScrollPosition = _scrollPosition;
+			var originalScrollPosition = m_ScrollPosition;
 
 			// clear out the list of cell view sizes and create a new list
 			_cellViewSizeArray.Clear();
@@ -810,9 +900,9 @@ namespace Mobcast.Coffee
 
 			// if we need to maintain our original position
 			if (keepPosition)
-				ScrollPosition = originalScrollPosition;
+				scrollPosition = originalScrollPosition;
 			else
-				ScrollPosition = loop ? _loopFirstScrollPosition : 0;
+				scrollPosition = loop ? _loopFirstScrollPosition : 0;
 //				if (loop)
 //				{
 //					ScrollPosition = _loopFirstScrollPosition;
@@ -1104,16 +1194,16 @@ namespace Mobcast.Coffee
 			// if looping, check to see if we scrolled past a trigger
 			if (loop)
 			{
-				if (_scrollPosition < _loopFirstJumpTrigger)
+				if (m_ScrollPosition < _loopFirstJumpTrigger)
 				{
 					nextVelocity = m_ScrollRect.velocity;
-					ScrollPosition = _loopLastScrollPosition - (_loopFirstJumpTrigger - _scrollPosition);
+					scrollPosition = _loopLastScrollPosition - (_loopFirstJumpTrigger - m_ScrollPosition);
 					m_ScrollRect.velocity = nextVelocity;
 				}
-				else if (_scrollPosition > _loopLastJumpTrigger)
+				else if (m_ScrollPosition > _loopLastJumpTrigger)
 				{
 					nextVelocity = m_ScrollRect.velocity;
-					ScrollPosition = _loopFirstScrollPosition + (_scrollPosition - _loopLastJumpTrigger);
+					scrollPosition = _loopFirstScrollPosition + (m_ScrollPosition - _loopLastJumpTrigger);
 					m_ScrollRect.velocity = nextVelocity;
 				}
 			}
@@ -1140,8 +1230,8 @@ namespace Mobcast.Coffee
 			endIndex = 0;
 
 			// get the positions of the scroller
-			var startPosition = _scrollPosition;
-			var endPosition = _scrollPosition + scrollRectSize;//(m_ScrollRect.vertical ? m_ScrollRectTransform.rect.height : m_ScrollRectTransform.rect.width);
+			var startPosition = m_ScrollPosition;
+			var endPosition = m_ScrollPosition + scrollRectSize;//(m_ScrollRect.vertical ? m_ScrollRectTransform.rect.height : m_ScrollRectTransform.rect.width);
 
 			// calculate each index based on the positions
 			startIndex = _GetCellViewIndexAtPosition(startPosition);
@@ -1332,7 +1422,7 @@ namespace Mobcast.Coffee
 			// スクロール値が変化した時、コールバックを受け取ります.
 			scrollRect.onValueChanged.AddListener(val =>
 				{
-					ScrollPosition = scrollRect.vertical
+					scrollPosition = scrollRect.vertical
 						? (1f - val.y) * scrollSize
 						: val.x * scrollSize;
 					_RefreshActive();
