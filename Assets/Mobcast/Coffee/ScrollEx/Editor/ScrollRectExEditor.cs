@@ -36,9 +36,9 @@ namespace Mobcast.Coffee
 
 //			if(!current._layoutGroup || )
 
-			if (current.layoutGroupXXX)
+			if (current.layoutGroup)
 			{
-				var so = new SerializedObject(current.layoutGroupXXX);
+				var so = new SerializedObject(current.layoutGroup);
 				so.Update();
 				EditorGUILayout.PropertyField(so.FindProperty("m_Padding"), true);
 				EditorGUILayout.PropertyField(so.FindProperty("m_Spacing"));

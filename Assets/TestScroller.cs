@@ -116,16 +116,8 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 
 		#region EnhancedScroller Handlers
 
-		/// <summary>
-		/// This tells the scroller the number of cells that should have room allocated. This should be the length of your data array.
-		/// </summary>
-		/// <param name="scroller">The scroller that is requesting the data size</param>
-		/// <returns>The number of cells</returns>
-		public override int GetNumberOfCells(ScrollRectEx scroller)
-		{
-			// in this example, we just pass the number of our data elements
-			return _data.Count;
-		}
+
+		public override int cellCount { get { return _data.Count; } }
 
 		/// <summary>
 		/// This tells the scroller what the size of a given cell will be. Cells can be any size and do not have
@@ -135,7 +127,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		/// <param name="scroller">The scroller requesting the cell size</param>
 		/// <param name="dataIndex">The index of the data that the scroller is requesting</param>
 		/// <returns>The size of the cell</returns>
-		public override float GetCellViewSize(ScrollRectEx scroller, int dataIndex)
+		public override float GetCellViewSize(int dataIndex)
 		{
 			// in this example, even numbered cells are 30 pixels tall, odd numbered cells are 100 pixels tall
 			return (dataIndex % 2 == 0 ? 120f : 100f);
@@ -149,7 +141,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		/// <param name="dataIndex">The index of the data that the scroller is requesting</param>
 		/// <param name="cellIndex">The index of the list. This will likely be different from the dataIndex if the scroller is looping</param>
 		/// <returns>The cell for the scroller to use</returns>
-		public override ScrollCellView GetCellView(ScrollRectEx scroller, int dataIndex, int cellIndex)
+		public override ScrollCellView GetCellView(int dataIndex, int cellIndex)
 		{
 			// first, we get a cell from the scroller by passing a prefab.
 			// if the scroller finds one it can recycle it will do so, otherwise
