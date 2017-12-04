@@ -31,12 +31,18 @@ namespace Mobcast.Coffee
 	public class ScrollRectEx : MonoBehaviour, IScrollSnap
 	{
 
-
+		[SerializeField]
+		public ScrollIndicator m_ScrollIndicator;
 
 
 		[SerializeField]
-		ScrollSnap m_ScrollSnap = new ScrollSnap();
+		public ScrollSnap m_ScrollSnap;
 
+		public ScrollSnap.Alignment m_Alignment = ScrollSnap.Alignment.Center;
+
+		public Method m_Method = Method.EaseOutSine;
+
+		public float m_Duration = 0.5f;
 
 		/// <summary>
 		/// Gets the number of cells in a list of data
@@ -648,11 +654,22 @@ namespace Mobcast.Coffee
 				return;
 
 			// スナップするインデックスを計算します.
-			var snapPosition = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_ScrollSnap.m_Alignment * 0.5f));
+			var snapPosition = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_Alignment * 0.5f));
 			var snapCellViewIndex = _GetCellViewIndexAtPosition(snapPosition);
 			var snapDataIndex = snapCellViewIndex % cellCount;
 
-			JumpToDataIndex(snapDataIndex, m_ScrollSnap.m_Alignment, m_ScrollSnap.m_Method, m_ScrollSnap.m_Duration);
+			JumpToDataIndex(snapDataIndex, m_Alignment, m_Method, m_Duration);
+		}
+
+
+		public int index
+		{
+			get
+			{
+				var pos = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_Alignment * 0.5f));
+				var snapCellViewIndex = _GetCellViewIndexAtPosition(pos);
+				return snapCellViewIndex % cellCount;
+			}
 		}
 
 		/// <summary>
@@ -1266,23 +1283,23 @@ namespace Mobcast.Coffee
 		public RectTransform content
 		{
 			get
-			{
-				if (!m_Content)
-				{
-					var sr = scrollRect;
-					if (!sr.content)
-					{
-						var go = new GameObject("Content", typeof(RectTransform));
-						go.transform.SetParent(sr.transform);
-						sr.content = go.GetComponent<RectTransform>();
-					}
-					m_Content = scrollRect.content;
-				}
-				return m_Content;
+			{ return scrollRect.content;
+//				if (!m_Content)
+//				{
+//					var sr = scrollRect;
+//					if (!sr.content)
+//					{
+//						var go = new GameObject("Content", typeof(RectTransform));
+//						go.transform.SetParent(sr.transform);
+//						sr.content = go.GetComponent<RectTransform>();
+//					}
+//					m_Content = scrollRect.content;
+//				}
+//				return m_Content;
 			}
 		}
 
-		RectTransform m_Content;
+//		RectTransform m_Content;
 
 
 		public ScrollRect scrollRect
@@ -1302,15 +1319,16 @@ namespace Mobcast.Coffee
 				if (!m_LayoutGroup)
 					m_LayoutGroup = content.GetComponent<HorizontalOrVerticalLayoutGroup>();
 
-				if (!m_LayoutGroup || scrollRect.vertical != (m_LayoutGroup is VerticalLayoutGroup))
-				{
-#if UNITY_EDITOR
-					if (!Application.isPlaying)
-						UnityEditor.EditorApplication.delayCall += UpdateLauyout;
-					else
-#endif
-						UpdateLauyout();
-				}
+//				if (!m_LayoutGroup || scrollRect.vertical != (m_LayoutGroup is VerticalLayoutGroup))
+//				{
+//#if UNITY_EDITOR
+//					if (!Application.isPlaying)
+//						UnityEditor.EditorApplication.delayCall += UpdateLauyout;
+//					else
+//#endif
+//						UpdateLauyout();
+//				}
+
 
 				return m_LayoutGroup;
 			}
@@ -1319,36 +1337,66 @@ namespace Mobcast.Coffee
 		HorizontalOrVerticalLayoutGroup m_LayoutGroup;
 
 
-		void UpdateLauyout()
-		{
-			var type = scrollRect.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
-			var layout = content.GetComponent<LayoutGroup>();
-			if (!layout)
-			{
-				m_LayoutGroup = content.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
-			}
-			else if (scrollRect.vertical != (layout is VerticalLayoutGroup))
-			{
-#if UNITY_EDITOR
-				if (!Application.isPlaying)
-				{
-					ComponentConverter.ConvertTo(layout, type);
-					m_LayoutGroup = content.GetComponent<HorizontalOrVerticalLayoutGroup>();
-				}
-				else
-#endif
-				{
-					RectOffset pad = layout ? layout.padding : new RectOffset();
-					float space = (layout is HorizontalOrVerticalLayoutGroup) ? (layout as HorizontalOrVerticalLayoutGroup).spacing : 0;
-					DestroyImmediate(layout);
-					m_LayoutGroup = content.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
-					m_LayoutGroup.padding = pad;
-					m_LayoutGroup.spacing = space;
-				}
-			}
-		}
+//		void UpdateLauyout()
+//		{
+//			var type = scrollRect.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
+//			var layout = content.GetComponent<LayoutGroup>();
+//			if (!layout)
+//			{
+//				m_LayoutGroup = content.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
+//			}
+//			else if (scrollRect.vertical != (layout is VerticalLayoutGroup))
+//			{
+//#if UNITY_EDITOR
+//				if (!Application.isPlaying)
+//				{
+//					ComponentConverter.ConvertTo(layout, type);
+//					m_LayoutGroup = content.GetComponent<HorizontalOrVerticalLayoutGroup>();
+//				}
+//				else
+//#endif
+//				{
+//					RectOffset pad = layout ? layout.padding : new RectOffset();
+//					float space = (layout is HorizontalOrVerticalLayoutGroup) ? (layout as HorizontalOrVerticalLayoutGroup).spacing : 0;
+//					DestroyImmediate(layout);
+//					m_LayoutGroup = content.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
+//					m_LayoutGroup.padding = pad;
+//					m_LayoutGroup.spacing = space;
+//				}
+//			}
+//		}
 
 		public Scrollbar scrollbar { get { return scrollRect.vertical ? scrollRect.verticalScrollbar : scrollRect.horizontalScrollbar; } }
+
+//		public RectTransform.Axis m_Direction = RectTransform.Axis.Vertical;
+//
+//		public HorizontalOrVerticalLayoutGroup pagerLayoutGroup
+//		{
+//			get
+//			{
+//				if (!m_PagerLayoutGroup)
+//				{
+//					var type = scrollRect.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
+//					m_PagerLayoutGroup = new GameObject("Pager", typeof(RectTransform), type).GetComponent(type) as HorizontalOrVerticalLayoutGroup;
+//				}
+//
+//				if (scrollRect.vertical != (m_PagerLayoutGroup is VerticalLayoutGroup))
+//				{
+//					#if UNITY_EDITOR
+//					if (!Application.isPlaying)
+//						UnityEditor.EditorApplication.delayCall += UpdateLauyout;
+//					else
+//					#endif
+//						UpdateLauyout();
+//				}
+//
+//
+//				return m_PagerLayoutGroup;
+//			}
+//		}
+//
+//		HorizontalOrVerticalLayoutGroup m_PagerLayoutGroup;
+
 
 		//==== v MonoBehavior Callbacks v ====
 		/// <summary>
@@ -1361,7 +1409,8 @@ namespace Mobcast.Coffee
 			// cache some components
 //			m_ScrollRect = this.GetComponent<ScrollRect>();
 			m_ScrollRectTransform = scrollRect.transform as RectTransform;
-			m_ScrollSnap.Initialize(this);
+			m_ScrollSnap.m_Target = this;
+			m_ScrollIndicator.m_Target = this;
 
 			if (!scrollRect.vertical && !scrollRect.horizontal)
 			{
@@ -1372,40 +1421,42 @@ namespace Mobcast.Coffee
 
 			// force the scroller to scroll in the direction we want
 			// set the containers anchor and pivot
+			RectTransform c = content;
+			HorizontalOrVerticalLayoutGroup lg = layoutGroup;
 			if (scrollRect.vertical)
 			{
 				scrollRect.horizontal = false;
-				content.anchorMin = new Vector2(0, 1);
-				content.anchorMax = Vector2.one;
-				content.pivot = new Vector2(0.5f, 1f);
+				c.anchorMin = new Vector2(0, 1);
+				c.anchorMax = Vector2.one;
+				c.pivot = new Vector2(0.5f, 1f);
 				_scrollbarVisibility = scrollRect.verticalScrollbarVisibility;
 			}
 			else
 			{
 				scrollRect.vertical = false;
-				content.anchorMin = Vector2.zero;
-				content.anchorMax = new Vector2(0, 1f);
-				content.pivot = new Vector2(0, 0.5f);
+				c.anchorMin = Vector2.zero;
+				c.anchorMax = new Vector2(0, 1f);
+				c.pivot = new Vector2(0, 0.5f);
 				_scrollbarVisibility = scrollRect.horizontalScrollbarVisibility;
 			}
 
-			content.offsetMax = Vector2.zero;
-			content.offsetMin = Vector2.zero;
-			content.localPosition = Vector3.zero;
-			content.localRotation = Quaternion.identity;
-			content.localScale = Vector3.one;
+			c.offsetMax = Vector2.zero;
+			c.offsetMin = Vector2.zero;
+			c.localPosition = Vector3.zero;
+			c.localRotation = Quaternion.identity;
+			c.localScale = Vector3.one;
 
-			layoutGroup.childAlignment = TextAnchor.UpperLeft;
-			layoutGroup.childForceExpandHeight = true;
-			layoutGroup.childForceExpandWidth = true;
+			lg.childAlignment = TextAnchor.UpperLeft;
+			lg.childForceExpandHeight = true;
+			lg.childForceExpandWidth = true;
 
 			// create the padder objects
 			GameObject go = new GameObject("First Padder", typeof(RectTransform), typeof(LayoutElement));
-			go.transform.SetParent(content, false);
+			go.transform.SetParent(c, false);
 			m_FirstPadder = go.GetComponent<LayoutElement>();
 
 			go = new GameObject("Last Padder", typeof(RectTransform), typeof(LayoutElement));
-			go.transform.SetParent(content, false);
+			go.transform.SetParent(c, false);
 			m_LastPadder = go.GetComponent<LayoutElement>();
 
 			// create the recycled cell view container
@@ -1439,6 +1490,18 @@ namespace Mobcast.Coffee
 		/// </summary>
 		protected virtual void LateUpdate()
 		{
+
+//			if (m_ScrollIndicator)
+//			{
+//				m_ScrollIndicator.SetVirticalMode(scrollRect.vertical);
+//				m_ScrollIndicator.count = cellCount;
+//
+//				var snapPosition = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_ScrollSnap.m_Alignment * 0.5f));
+//				var snapCellViewIndex = _GetCellViewIndexAtPosition(snapPosition);
+//				var snapDataIndex = snapCellViewIndex % cellCount;
+//				m_ScrollIndicator.index = snapDataIndex;
+//			}
+			m_ScrollIndicator.Update();
 			m_ScrollSnap.Update();
 //			if (_reloadData)
 //			{

@@ -34,24 +34,27 @@ namespace Mobcast.Coffee
 		bool m_IsDragging;
 		int m_ScrollCount;
 		Coroutine m_CoTweening;
-		IScrollSnap m_Target;
+//		IScrollSnap m_Target;
+
+		public ScrollRectEx m_Target { get; set; }
+
 		bool m_TriggerSnap;
 
 		public bool m_SnapOnEndDrag = false;
 
-		public Alignment m_Alignment = Alignment.Center;
 
 		public float m_ThresholdVerocity = 200;
+//		public Alignment m_Alignment = Alignment.Center;
+//
+//		public Method m_Method = Method.EaseOutSine;
+//
+//		public float m_Duration = 0.5f;
 
-		public Method m_Method = Method.EaseOutSine;
 
-		public float m_Duration = 0.5f;
-
-
-		public void Initialize(IScrollSnap target)
-		{
-			m_Target = target;
-		}
+//		public void Initialize(IScrollSnap target)
+//		{
+//			m_Target = target;
+//		}
 
 		public void OnScroll()
 		{

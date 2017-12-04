@@ -36,6 +36,9 @@ public static class ComponentConverter
 	/// </summary>
 	public static void ConvertTo(Object context, System.Type type)
 	{
+		if (!CanConvertTo(context, type))
+			return;
+
 		var target = context as MonoBehaviour;
 		var so = new SerializedObject(target);
 		so.Update();
