@@ -8,7 +8,7 @@ namespace Mobcast.Coffee
 	/// <summary>
 	/// This is the base class that all cell views should derive from
 	/// </summary>
-	public class ScrollCellView : MonoBehaviour
+	public abstract class ScrollCellView : MonoBehaviour
 	{
 		/// <summary>
 		/// The cellIdentifier is a unique string that allows the scroller
@@ -40,6 +40,19 @@ namespace Mobcast.Coffee
 		/// This method is called by the scroller when the RefreshActiveCellViews is called on the scroller
 		/// You can override it to update your cell's view UID
 		/// </summary>
-		public virtual void RefreshCellView() { }
+		public abstract void RefreshCellView();
+
+		/// <summary>
+		/// This delegate handles the visibility changes of cell views
+		/// </summary>
+		/// <param name="cellView">The cell view that changed visibility</param>
+		public abstract void OnChangedCellViewVisibility();
+
+		/// <summary>
+		/// This delegate will be fired just before the cell view is recycled
+		/// </summary>
+		/// <param name="cellView"></param>
+		public abstract void OnWillRecycleCellView();
+
 	}
 }

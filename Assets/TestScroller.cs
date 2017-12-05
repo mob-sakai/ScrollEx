@@ -30,8 +30,30 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 	///  - What each cell size is (GetCellSize)
 	///  - What the cell at a given index should be (GetCell)
 	/// </summary>
-	public class TestScroller : ScrollRectEx
+	public class TestScroller : MonoBehaviour, IScrollViewDelegate
 	{
+		#region IScrollViewDelegate implementation
+
+		public int GetDataCount()
+		{
+			return _data.Count;
+		}
+
+		public float GetCellViewSize(int dataIndex)
+		{
+			return (dataIndex % 2 == 0 ? 120f : 100f);
+		}
+
+		public ScrollCellView GetCellView(int dataIndex, int cellIndex)
+		{
+			TestCellView cellView = scrollView.GetCellView(cellViewPrefab) as TestCellView;
+			cellView.name = "Cell " + dataIndex.ToString();
+			cellView.SetData(_data[dataIndex]);
+			return cellView;
+		}
+
+		#endregion
+
 		/// <summary>
 		/// Internal representation of our data. Note that the scroller will never see
 		/// this, so it separates the data from the layout using MVC principles.
@@ -44,6 +66,8 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		/// </summary>
 		public ScrollCellView cellViewPrefab;
 
+		public ScrollRectEx scrollView;
+
 		/// <summary>
 		/// Be sure to set up your references to the scroller after the Awake function. The 
 		/// scroller does some internal configuration in its own Awake function. If you need to
@@ -55,12 +79,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		/// </summary>
 		void Start()
 		{
-//			base.Start();
-
-			// tell the scroller that this script will be its delegate
-//			this.Delegate = this;
-
-			// load in a large set of data
+			scrollView.scrollViewDelegate = this;
 			LoadLargeData();
 		}
 
@@ -75,7 +94,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 				_data.Add(new Data() { someText = "Cell Data Index " + i.ToString() });
 
 			// tell the scroller to reload now that we have the data
-			this.ReloadData();
+			scrollView.ReloadData();
 		}
 
 		/// <summary>
@@ -91,7 +110,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 			_data.Add(new Data() { someText = "C" });
 
 			// tell the scroller to reload now that we have the data
-			this.ReloadData();
+			scrollView.ReloadData();
 		}
 
 		#region UI Handlers

@@ -19,19 +19,38 @@ namespace Mobcast.Coffee
 		ScrollCellView GetCellView(int dataIndex, int cellIndex);
 	}
 
-
 	/// <summary>
 	/// The ScrollRectEx allows you to easily set up a dynamic scroller that will recycle views for you. This means
 	/// that using only a handful of views, you can display thousands of rows. This will save memory and processing
 	/// power in your application.
 	/// </summary>
 	[RequireComponent(typeof(ScrollRect))]
-	public class ScrollRectEx : MonoBehaviour, IScrollSnap
+	public class ScrollRectEx : MonoBehaviour, IScrollSnap, IScrollViewDelegate
 	{
+		#region IScrollViewDelegate implementation
+		public int GetDataCount()
+		{
+			return content.childCount -2;
+		}
+		public float GetCellViewSize(int dataIndex)
+		{
+			var rt = content.GetChild(dataIndex) as RectTransform;
+			var layoutElement = rt.GetComponent<LayoutElement>();
+
+			if (layoutElement)
+				return scrollRect.vertical ? layoutElement.preferredHeight : layoutElement.preferredWidth;
+			else
+				return scrollRect.vertical ? rt.rect.height : rt.rect.width;
+		}
+		public ScrollCellView GetCellView(int dataIndex, int cellIndex)
+		{
+			return null;
+		}
+		#endregion
 
 		public IScrollViewDelegate scrollViewDelegate
 		{
-			get{ return m_ScrollViewDelegate; }
+			get{ return m_ScrollViewDelegate ?? this; }
 			set{ m_ScrollViewDelegate = value; _reloadData = true; }
 		}
 		IScrollViewDelegate m_ScrollViewDelegate;
@@ -39,60 +58,17 @@ namespace Mobcast.Coffee
 		[SerializeField]
 		public ScrollIndicator m_ScrollPager;
 
-
 		[SerializeField]
 		public ScrollSnap m_ScrollSnap;
 
+		[SerializeField]
 		public ScrollSnap.Alignment m_Alignment = ScrollSnap.Alignment.Center;
 
+		[SerializeField]
 		public Method m_Method = Method.EaseOutSine;
 
+		[SerializeField]
 		public float m_Duration = 0.5f;
-
-
-		/// <summary>
-		/// Gets the size of a cell view given the index of the data set.
-		/// This allows you to have different sized cells
-		/// </summary>
-		/// <param name="scroller"></param>
-		/// <param name="dataIndex"></param>
-		/// <returns></returns>
-		public virtual float GetCellViewSize(int dataIndex)
-		{
-			return 0;
-		}
-
-		/// <summary>
-		/// Gets the cell view that should be used for the data index. Your implementation
-		/// of this function should request a new cell from the scroller so that it can
-		/// properly recycle old cells.
-		/// </summary>
-		/// <param name="scroller"></param>
-		/// <param name="dataIndex"></param>
-		/// <param name="cellIndex"></param>
-		/// <returns></returns>
-		public virtual ScrollCellView GetCellView(int dataIndex, int cellIndex)
-		{
-			return null;
-		}
-
-		/// <summary>
-		/// This delegate handles the visibility changes of cell views
-		/// </summary>
-		/// <param name="cellView">The cell view that changed visibility</param>
-		public virtual void OnChangedCellViewVisibility(ScrollCellView cellView)
-		{
-		}
-
-		/// <summary>
-		/// This delegate will be fired just before the cell view is recycled
-		/// </summary>
-		/// <param name="cellView"></param>
-		public virtual void OnWillRecycleCellView(ScrollCellView cellView)
-		{
-		}
-
-
 
 		#region Public
 
@@ -134,6 +110,8 @@ namespace Mobcast.Coffee
 				// 座標が変更された時のみ、新しく座標を設定します.
 				if (0.01f < Mathf.Abs(m_ScrollPosition - value))
 				{
+					Debug.LogFormat("scrollPosition {0}", value);
+
 					m_NeedRefleshActive = true;
 					m_ScrollPosition = value;
 					if (m_ScrollRect.vertical)
@@ -141,17 +119,10 @@ namespace Mobcast.Coffee
 					else
 						m_ScrollRect.horizontalNormalizedPosition = (m_ScrollPosition / scrollSize);
 				}
-//				SetPositionWithDir(value, 0); 
 			}
 		}
 
-		/// <summary>
-		/// Whether the scroller should loop the resulting cell views.
-		/// Looping creates three sets of internal size data, attempting
-		/// to keep the scroller in the middle set. If the scroller goes
-		/// outside of this set, it will jump back into the middle set,
-		/// giving the illusion of an infinite set of data.
-		/// </summary>
+
 		public bool loop
 		{
 			get { return m_Loop; }
@@ -160,19 +131,9 @@ namespace Mobcast.Coffee
 				if (m_Loop == value)
 					return;
 				
-				// only if the value has changed
-//				if (loop != value)
-//				{
 				m_Loop = value;
-
-				// get the original position so that when we turn looping on
-				// we can jump back to this position
-				// 
 				var oldPos = m_ScrollPosition;
 
-
-				// call resize to generate more internal elements if loop is on,
-				// remove the elements if loop is off
 				_Resize(false);
 				scrollPosition = m_Loop
 					? _loopFirstScrollPosition + oldPos
@@ -193,17 +154,17 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// This is the first data index showing in the scroller's visible area
 		/// </summary>
-		public int StartDataIndex { get { return _activeCellViewsStartIndex % scrollViewDelegate.GetDataCount(); } }
+		public int StartDataIndex { get { return _activeCellViewsStartIndex % dataCount; } }
 
 		/// <summary>
 		/// This is the last data index showing in the scroller's visible area
 		/// </summary>
-		public int EndDataIndex { get { return _activeCellViewsEndIndex % scrollViewDelegate.GetDataCount(); } }
+		public int EndDataIndex { get { return _activeCellViewsEndIndex % dataCount; } }
 
 		/// <summary>
 		/// This is the number of cells in the scroller
 		/// </summary>
-//		public virtual int cellCount { get { return -1; } }
+		public virtual int dataCount { get { return scrollViewDelegate.GetDataCount(); } }
 
 
 		/// <summary>
@@ -242,13 +203,8 @@ namespace Mobcast.Coffee
 		{
 			_reloadData = false;
 
-			// recycle all the active cells so
-			// that we are sure to get fresh views
 			_RecycleAllCells();
 
-			// if we have a delegate handling our data, then
-			// call the resize
-			//if (Delegate != null)
 			_Resize(false);
 
 			m_ScrollPosition = scrollPositionFactor * scrollSize;
@@ -258,13 +214,7 @@ namespace Mobcast.Coffee
 				m_ScrollRect.horizontalNormalizedPosition = scrollPositionFactor;
 		}
 
-		/// <summary>
-		/// This calls the RefreshCellView method on each active cell.
-		/// If you override the RefreshCellView method in your cells
-		/// then you can update the UI without having to reload the data.
-		/// Note: this will not change the cell sizes, you will need
-		/// to call ReloadData for that to work.
-		/// </summary>
+
 		public void RefreshActiveCellViews()
 		{
 			for (var i = 0; i < _activeCellViews.Count; i++)
@@ -273,80 +223,29 @@ namespace Mobcast.Coffee
 			}
 		}
 
-		/// <summary>
-		/// Removes all cells, both active and recycled from the scroller.
-		/// This will call garbage collection.
-		/// </summary>
-		public void ClearAll()
-		{
-			ClearActive();
-			ClearRecycled();
-		}
-
-		/// <summary>
-		/// Removes all the active cell views. This should only be used if you want
-		/// to get rid of cells because of settings set by Unity that cannot be
-		/// changed at runtime. This will call garbage collection.
-		/// </summary>
-		public void ClearActive()
-		{
-			for (var i = 0; i < _activeCellViews.Count; i++)
-			{
-				DestroyImmediate(_activeCellViews[i].gameObject);
-			}
-			_activeCellViews.Clear();
-		}
-
-		/// <summary>
-		/// Removes all the recycled cell views. This should only be used after you
-		/// load in a completely different set of cell views that will not use the 
-		/// recycled views. This will call garbage collection.
-		/// </summary>
-		public void ClearRecycled()
-		{
-			for (var i = 0; i < _recycledCellViews.Count; i++)
-			{
-				DestroyImmediate(_recycledCellViews[i].gameObject);
-			}
-			_recycledCellViews.Clear();
-		}
-
-
-//		public void SetPositionWithDir(float value, float dir)
+//		public void ClearAll()
 //		{
-//			// ループ時はループポイント跨ぎを考慮します.
-//			if (loop)
-//			{
-//				if (0 < dir && value > _loopLastJumpTrigger)
-//					value = _loopFirstScrollPosition + (value - _loopLastJumpTrigger);
-//				else if (dir < 0 && value < _loopFirstJumpTrigger)
-//					value = _loopLastScrollPosition - (_loopFirstJumpTrigger - value);
-//			}
-////			ScrollPosition = value;
-//			// 非ループ時はオーバーランを防ぐためにスクロール制限をかけます.
-//			else
-//			{
-//				var min = -scrollRectSize;
-//				var max = GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1) + scrollRectSize;
-//				if (value < min || max < value)
-//				{
-//					value = Mathf.Clamp(value, min, max);
-//					scrollRect.velocity = Vector2.zero;
-//				}
-//			}
-//
-//			// 座標が変更された時のみ、新しく座標を設定します.
-//			if (0.01f < Mathf.Abs(m_ScrollPosition - value))
-//			{
-//				m_NeedRefleshActive = true;
-//				m_ScrollPosition = value;
-//				if (m_ScrollRect.vertical)
-//					m_ScrollRect.verticalNormalizedPosition = 1f - (m_ScrollPosition / scrollSize);
-//				else
-//					m_ScrollRect.horizontalNormalizedPosition = (m_ScrollPosition / scrollSize);
-//			}
+//			ClearActive();
+//			ClearRecycled();
 //		}
-
+//
+//		public void ClearActive()
+//		{
+//			for (var i = 0; i < _activeCellViews.Count; i++)
+//			{
+//				DestroyImmediate(_activeCellViews[i].gameObject);
+//			}
+//			_activeCellViews.Clear();
+//		}
+//
+//		public void ClearRecycled()
+//		{
+//			for (var i = 0; i < _recycledCellViews.Count; i++)
+//			{
+//				DestroyImmediate(_recycledCellViews[i].gameObject);
+//			}
+//			_recycledCellViews.Clear();
+//		}
 
 		public void JumpToDataIndex(int dataIndex,
 		                            ScrollSnap.Alignment align,
@@ -354,6 +253,7 @@ namespace Mobcast.Coffee
 		                            float tweenTime = 0f
 		)
 		{
+
 			float normalizedOffset = (int)align * 0.5f;
 			bool useSpacing = align == ScrollSnap.Alignment.Center;
 
@@ -372,7 +272,7 @@ namespace Mobcast.Coffee
 					cellSize += spacing;
 
 					// if this is not a bounday cell, then add spacing from the other side
-					if (dataIndex > 0 && dataIndex < (scrollViewDelegate.GetDataCount() - 1))
+					if (dataIndex > 0 && dataIndex < (dataCount - 1))
 						cellSize += spacing;
 				}
 
@@ -393,8 +293,8 @@ namespace Mobcast.Coffee
 				// get the scroll positions for each data set.
 				// Note: we are calculating the position based on the cell view index, not the data index here
 				var set1Position = GetScrollPositionForCellViewIndex(dataIndex) + offset;
-				var set2Position = GetScrollPositionForCellViewIndex(dataIndex + scrollViewDelegate.GetDataCount()) + offset;
-				var set3Position = GetScrollPositionForCellViewIndex(dataIndex + scrollViewDelegate.GetDataCount() * 2) + offset;
+				var set2Position = GetScrollPositionForCellViewIndex(dataIndex + dataCount) + offset;
+				var set3Position = GetScrollPositionForCellViewIndex(dataIndex + dataCount * 2) + offset;
 
 				// get the offsets of each scroll position from the current scroll position
 				var set1Diff = (Mathf.Abs(m_ScrollPosition - set1Position));
@@ -422,6 +322,7 @@ namespace Mobcast.Coffee
 				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1));
 			}
 
+			Debug.LogFormat("JumpToDataIndex {0} {1} {2} {3} {4}", this, dataIndex, align, tweenType,newScrollPosition);
 			m_ScrollSnap.StartScrollTween(tweenType, tweenTime, scrollPosition, newScrollPosition);
 		}
 
@@ -432,9 +333,11 @@ namespace Mobcast.Coffee
 		{
 			get
 			{
+				if (dataCount <= 0)
+					return -1;
 				var pos = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_Alignment * 0.5f));
-				var snapCellViewIndex = _GetCellViewIndexAtPosition(pos);
-				return snapCellViewIndex % scrollViewDelegate.GetDataCount();
+				var cellViewIndex = _GetCellViewIndexAtPosition(pos);
+				return cellViewIndex % dataCount;
 			}
 		}
 
@@ -447,7 +350,7 @@ namespace Mobcast.Coffee
 		public float GetScrollPositionForCellViewIndex(int cellViewIndex, bool beforeCell = true)
 		{
 			// 要素がない場合、0を返します.
-			if (scrollViewDelegate.GetDataCount() == 0)
+			if (dataCount == 0)
 				return 0;
 
 			// 先頭の要素を指定した場合、paddingサイズを返します.
@@ -472,7 +375,7 @@ namespace Mobcast.Coffee
 		/// <returns></returns>
 		public float GetScrollPositionForDataIndex(int dataIndex, bool beforeCell = true)
 		{
-			return GetScrollPositionForCellViewIndex(loop ? scrollViewDelegate.GetDataCount() + dataIndex : dataIndex, beforeCell);
+			return GetScrollPositionForCellViewIndex(loop ? dataCount + dataIndex : dataIndex, beforeCell);
 		}
 
 		/// <summary>
@@ -678,21 +581,17 @@ namespace Mobcast.Coffee
 			// if we need to maintain our original position
 			if (keepPosition)
 				scrollPosition = originalScrollPosition;
+			else if(m_ScrollSnap.snapOnEndDrag)
+				JumpToDataIndex(0, m_Alignment, Method.immediate, 0);
 			else
 				scrollPosition = loop ? _loopFirstScrollPosition : 0;
 		}
 
-		/// <summary>
-		/// Creates a list of cell view sizes for faster access
-		/// </summary>
-		/// <returns></returns>
-		private float _AddCellViewSizes()
+		float _AddCellViewSizes()
 		{
 			var offset = 0f;
-			// add a size for each row in our data based on how many the delegate tells us to create
-			for (var i = 0; i < scrollViewDelegate.GetDataCount(); i++)
+			for (var i = 0; i < dataCount; i++)
 			{
-				// add the size of this cell based on what the delegate tells us to use. Also add spacing if this cell isn't the first one
 				_cellViewSizeArray.Add(scrollViewDelegate.GetCellViewSize(i) + (i == 0 ? 0 : layoutGroup.spacing));
 				offset += _cellViewSizeArray[_cellViewSizeArray.Count - 1];
 			}
@@ -700,12 +599,7 @@ namespace Mobcast.Coffee
 			return offset;
 		}
 
-		/// <summary>
-		/// Create a copy of the cell view sizes. This is only used in looping
-		/// </summary>
-		/// <param name="numberOfTimes">How many times the copy should be made</param>
-		/// <param name="cellCount">How many cells to copy</param>
-		private void _DuplicateCellViewSizes(int numberOfTimes, int cellCount)
+		void _DuplicateCellViewSizes(int numberOfTimes, int cellCount)
 		{
 			for (var i = 0; i < numberOfTimes; i++)
 			{
@@ -716,10 +610,7 @@ namespace Mobcast.Coffee
 			}
 		}
 
-		/// <summary>
-		/// Calculates the offset of each cell, accumulating the values from previous cells
-		/// </summary>
-		private void _CalculateCellViewOffsets()
+		void _CalculateCellViewOffsets()
 		{
 			_cellViewOffsetArray.Clear();
 			var offset = 0f;
@@ -845,7 +736,7 @@ namespace Mobcast.Coffee
 		/// <param name="cellView"></param>
 		private void _RecycleCell(ScrollCellView cellView)
 		{
-			OnWillRecycleCellView(cellView);
+			cellView.OnWillRecycleCellView();
 
 			// remove the cell view from the active list
 			_activeCellViews.Remove(cellView);
@@ -861,7 +752,7 @@ namespace Mobcast.Coffee
 			cellView.cellIndex = 0;
 			cellView.active = false;
 
-			OnChangedCellViewVisibility(cellView);
+			cellView.OnChangedCellViewVisibility();
 		}
 
 		/// <summary>
@@ -871,13 +762,13 @@ namespace Mobcast.Coffee
 		/// <param name="listPosition">Whether to add the cell to the beginning or the end</param>
 		private void _AddCellView(int cellIndex, bool atStart)
 		{
-			if (scrollViewDelegate.GetDataCount() == 0)
+			if (dataCount == 0 || scrollViewDelegate == this)
 				return;
 
 			// get the dataIndex. Modulus is used in case of looping so that the first set of cells are ignored
-			var dataIndex = cellIndex % scrollViewDelegate.GetDataCount();
+			var dataIndex = cellIndex % dataCount;
 			// request a cell view from the delegate
-			var cellView = GetCellView(dataIndex, cellIndex);
+			var cellView = scrollViewDelegate.GetCellView(dataIndex, cellIndex);
 
 			// set the cell's properties
 			cellView.cellIndex = cellIndex;
@@ -908,7 +799,7 @@ namespace Mobcast.Coffee
 			// set the hierarchy position of the cell view in the container
 			cellView.transform.SetSiblingIndex(atStart ? 1 : content.childCount - 2);
 
-			OnChangedCellViewVisibility(cellView);
+			cellView.OnChangedCellViewVisibility();
 		}
 
 		/// <summary>
@@ -917,7 +808,7 @@ namespace Mobcast.Coffee
 		/// </summary>
 		private void _SetPadders()
 		{
-			if (scrollViewDelegate.GetDataCount() == 0)
+			if (dataCount == 0 || scrollViewDelegate == this)
 				return;
 
 			// calculate the size of each padder
@@ -1110,21 +1001,25 @@ namespace Mobcast.Coffee
 			// create the padder objects
 			GameObject go = new GameObject("First Padder", typeof(RectTransform), typeof(LayoutElement));
 			go.transform.SetParent(c, false);
+			go.SetActive(false);
 			m_FirstPadder = go.GetComponent<LayoutElement>();
 
 			go = new GameObject("Last Padder", typeof(RectTransform), typeof(LayoutElement));
 			go.transform.SetParent(c, false);
+			go.SetActive(false);
 			m_LastPadder = go.GetComponent<LayoutElement>();
 
 			// create the recycled cell view container
 			go = new GameObject("Recycled Cells", typeof(RectTransform));
 			go.transform.SetParent(m_ScrollRect.transform, false);
+			go.SetActive(false);
 			_recycledCellViewContainer = go.GetComponent<RectTransform>();
-			_recycledCellViewContainer.gameObject.SetActive(false);
 
 			// set up the last values for updates
 			_lastScrollRectSize = scrollRectSize;
 			_lastLoop = loop;
+
+			_Resize(false);
 
 			// スクロール値が変化した時、コールバックを受け取ります.
 			scrollRect.onValueChanged.AddListener(val =>
@@ -1134,6 +1029,8 @@ namespace Mobcast.Coffee
 						: val.x * scrollSize;
 					_RefreshActive();
 				});
+
+//			m_ScrollSnap.OnEndDrag();
 		}
 
 		/// <summary>
@@ -1147,7 +1044,7 @@ namespace Mobcast.Coffee
 				ReloadData();
 			}
 
-			m_ScrollPager.Update(index, scrollViewDelegate.GetDataCount());
+			m_ScrollPager.Update(index, dataCount);
 			m_ScrollSnap.Update();
 
 			// if the scroll rect size has changed and looping is on,
@@ -1192,19 +1089,15 @@ namespace Mobcast.Coffee
 			m_ScrollSnap.OnEndDrag();
 		}
 
-		/// <summary>
-		/// Snaps the scroller on command. This is called internally when snapping is set to true and the velocity
-		/// has dropped below the threshold. You can use this to manually snap whenever you like.
-		/// </summary>
 		public void OnTriggerSnap()
 		{
-			if (scrollViewDelegate.GetDataCount() == 0)
+			if (dataCount == 0)
 				return;
 
 			// スナップするインデックスを計算します.
 			var snapPosition = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_Alignment * 0.5f));
 			var snapCellViewIndex = _GetCellViewIndexAtPosition(snapPosition);
-			var snapDataIndex = snapCellViewIndex % scrollViewDelegate.GetDataCount();
+			var snapDataIndex = snapCellViewIndex % dataCount;
 
 			JumpToDataIndex(snapDataIndex, m_Alignment, m_Method, m_Duration);
 		}

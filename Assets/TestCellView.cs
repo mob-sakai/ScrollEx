@@ -26,5 +26,18 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 			// update the UI text with the cell data
 			someTextText.text = data.someText;
 		}
+
+
+		#region implemented abstract members of ScrollCellView
+		public override void RefreshCellView()
+		{
+		}
+		public override void OnChangedCellViewVisibility()
+		{
+		}
+		public override void OnWillRecycleCellView()
+		{
+		}
+		#endregion
 	}
 }
