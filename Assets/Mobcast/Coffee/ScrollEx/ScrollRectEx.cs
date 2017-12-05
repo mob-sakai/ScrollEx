@@ -25,7 +25,7 @@ namespace Mobcast.Coffee
 	/// power in your application.
 	/// </summary>
 	[RequireComponent(typeof(ScrollRect))]
-	public class ScrollRectEx : MonoBehaviour, IScrollSnap, IScrollViewDelegate
+	public class ScrollRectEx : MonoBehaviour, IScrollSnap, IScrollPager, IScrollViewDelegate
 	{
 		#region IScrollViewDelegate implementation
 		public int GetDataCount()
@@ -56,7 +56,7 @@ namespace Mobcast.Coffee
 		IScrollViewDelegate m_ScrollViewDelegate;
 
 		[SerializeField]
-		public ScrollIndicator m_ScrollPager;
+		public ScrollPager m_ScrollPager;
 
 		[SerializeField]
 		public ScrollSnap m_ScrollSnap;
@@ -110,8 +110,6 @@ namespace Mobcast.Coffee
 				// 座標が変更された時のみ、新しく座標を設定します.
 				if (0.01f < Mathf.Abs(m_ScrollPosition - value))
 				{
-					Debug.LogFormat("scrollPosition {0}", value);
-
 					m_NeedRefleshActive = true;
 					m_ScrollPosition = value;
 					if (m_ScrollRect.vertical)
@@ -322,14 +320,10 @@ namespace Mobcast.Coffee
 				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1));
 			}
 
-			Debug.LogFormat("JumpToDataIndex {0} {1} {2} {3} {4}", this, dataIndex, align, tweenType,newScrollPosition);
 			m_ScrollSnap.StartScrollTween(tweenType, tweenTime, scrollPosition, newScrollPosition);
 		}
 
-
-
-
-		public int index
+		public int currentIndex
 		{
 			get
 			{
@@ -960,7 +954,7 @@ namespace Mobcast.Coffee
 //			m_ScrollRect = this.GetComponent<ScrollRect>();
 			m_ScrollRectTransform = scrollRect.transform as RectTransform;
 			m_ScrollSnap.target = this;
-//			m_ScrollIndicator.m_Target = this;
+			m_ScrollPager.target = this;
 
 			if (!scrollRect.vertical && !scrollRect.horizontal)
 			{
@@ -1044,7 +1038,7 @@ namespace Mobcast.Coffee
 				ReloadData();
 			}
 
-			m_ScrollPager.Update(index, dataCount);
+			m_ScrollPager.Update();
 			m_ScrollSnap.Update();
 
 			// if the scroll rect size has changed and looping is on,
