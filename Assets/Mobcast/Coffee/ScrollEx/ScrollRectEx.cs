@@ -44,15 +44,6 @@ namespace Mobcast.Coffee
 
 		public float m_Duration = 0.5f;
 
-		/// <summary>
-		/// Gets the number of cells in a list of data
-		/// </summary>
-		/// <param name="scroller"></param>
-		/// <returns></returns>
-		//		public virtual int GetNumberOfCells(ScrollRectEx scroller)
-		//		{
-		//			return 0;
-		//		}
 
 		/// <summary>
 		/// Gets the size of a cell view given the index of the data set.
@@ -101,22 +92,6 @@ namespace Mobcast.Coffee
 		#region Public
 
 		/// <summary>
-		/// Which side of a cell to reference.
-		/// For vertical scrollers, before means above, after means below.
-		/// For horizontal scrollers, before means to left of, after means to the right of.
-		/// </summary>
-		//		public enum CellViewPositionEnum
-		//		{
-		//			Before,
-		//			After
-		//		}
-
-		/// <summary>
-		/// The direction the scroller is handling
-		/// </summary>
-		//		public ScrollDirectionEnum scrollDirection;
-
-		/// <summary>
 		/// The spacing to use between layout elements in the layout group.
 		/// </summary>
 		public float spacing { get { return layoutGroup.spacing; } }
@@ -132,49 +107,9 @@ namespace Mobcast.Coffee
 		[SerializeField] bool m_Loop;
 
 		/// <summary>
-		/// Whether the scollbar should be shown
-		/// </summary>
-		//		[SerializeField]
-		private ScrollRect.ScrollbarVisibility _scrollbarVisibility;
-
-//		/// <summary>
-//		/// This delegate is called when a cell view is hidden or shown
-//		/// </summary>
-//		public CellViewVisibilityChangedDelegate cellViewVisibilityChanged;
-//
-//		/// <summary>
-//		/// This delegate is called just before a cell view is hidden by recycling
-//		/// </summary>
-//		public CellViewWillRecycleDelegate cellViewWillRecycle;
-
-		/// <summary>
 		/// The absolute position in pixels from the start of the scroller
 		/// </summary>
 		public float scrollPosition { get { return m_ScrollPosition; } set { SetPositionWithDir(value, 0); } }
-//				// 非ループ時はオーバーランを防ぐためにスクロール制限をかけます.
-//				if (!loop)
-//				{
-//					var min = -scrollRectSize;
-//					var max = GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1) + scrollRectSize;
-//					if (value < min || max < value)
-//					{
-//						value = Mathf.Clamp(value, min, max);
-//						scrollRect.velocity = Vector2.zero;
-//					}
-//				}
-//
-//				// 座標が変更された時のみ、新しく座標を設定します.
-//				if (0.01f < Mathf.Abs(_scrollPosition - value))
-//				{
-//					m_NeedRefleshActive = true;
-//					_scrollPosition = value;
-//					if (m_ScrollRect.vertical)
-//						m_ScrollRect.verticalNormalizedPosition = 1f - (_scrollPosition / scrollSize);
-//					else
-//						m_ScrollRect.horizontalNormalizedPosition = (_scrollPosition / scrollSize);
-//				}
-//			}
-//		}
 
 		/// <summary>
 		/// Whether the scroller should loop the resulting cell views.
@@ -208,60 +143,8 @@ namespace Mobcast.Coffee
 				scrollPosition = m_Loop
 					? _loopFirstScrollPosition + oldPos
 					: oldPos - _loopFirstScrollPosition;
-//					if (loop)
-//					{
-//						// set the new scroll position based on the middle set of data + the original position
-//						ScrollPosition = _loopFirstScrollPosition + oldPos;
-//					}
-//					else
-//					{
-//						// set the new scroll position based on the original position and the first loop position
-//						ScrollPosition = oldPos - _loopFirstScrollPosition;
-//					}
-
-				// update the scrollbars
-				ScrollbarVisibility = _scrollbarVisibility;
-//				}
 			}
 		}
-
-		/// <summary>
-		/// Sets how the visibility of the scrollbars should be handled
-		/// </summary>
-		public ScrollRect.ScrollbarVisibility ScrollbarVisibility
-		{
-			get { return _scrollbarVisibility; }
-			set
-			{
-				_scrollbarVisibility = value;
-				if (!scrollbar)
-					return;
-
-				// only if the scrollbar exists
-//				if (scrollbar != null)
-//				{
-				// make sure we actually have some cell views
-				if (_cellViewOffsetArray != null && _cellViewOffsetArray.Count > 0)
-				{
-					if (_cellViewOffsetArray.Last() < scrollRectSize || loop)
-					{
-						// if the size of the scrollable area is smaller than the scroller
-						// or if we have looping on, hide the scrollbar unless the visibility
-						// is set to Always.
-						scrollbar.gameObject.SetActive(_scrollbarVisibility == ScrollRect.ScrollbarVisibility.Permanent);
-					}
-					else
-					{
-						// if the size of the scrollable areas is larger than the scroller
-						// or looping is off, then show the scrollbars unless visibility
-						// is set to Never.
-						scrollbar.gameObject.SetActive(true);
-					}
-				}
-//				}
-			}
-		}
-
 
 		/// <summary>
 		/// This is the first cell view index showing in the scroller's visible area
@@ -293,15 +176,6 @@ namespace Mobcast.Coffee
 		/// The size of the visible portion of the scroller
 		/// </summary>
 		public float scrollRectSize { get { return scrollRect.vertical ? m_ScrollRectTransform.rect.height : m_ScrollRectTransform.rect.width; } }
-		//		{
-		//			get
-		//			{
-		//				if (scrollRect.vertical)
-		//					return m_ScrollRectTransform.rect.height;
-		//				else
-		//					return m_ScrollRectTransform.rect.width;
-		//			}
-		//		}
 
 		/// <summary>
 		/// Create a cell view, or recycle one if it already exists
@@ -332,7 +206,7 @@ namespace Mobcast.Coffee
 		/// <param name="scrollPositionFactor">The percentage of the scroller to start at between 0 and 1, 0 being the start of the scroller</param>
 		public void ReloadData(float scrollPositionFactor = 0)
 		{
-//			_reloadData = false;
+			_reloadData = false;
 
 			// recycle all the active cells so
 			// that we are sure to get fresh views
@@ -517,132 +391,6 @@ namespace Mobcast.Coffee
 
 			m_ScrollSnap.StartSnapping(tweenType, tweenTime, scrollPosition, newScrollPosition);
 		}
-		/*
-
-		/// <summary>
-		/// Jump to a position in the scroller based on a dataIndex. This overload allows you
-		/// to specify a specific offset within a cell as well.
-		/// </summary>
-		/// <param name="dataIndex">he data index to jump to</param>
-		/// <param name="scrollerOffset">The offset from the start (top / left) of the scroller in the range 0..1.
-		/// Outside this range will jump to the location before or after the scroller's viewable area</param>
-		/// <param name="cellOffset">The offset from the start (top / left) of the cell in the range 0..1</param>
-		/// <param name="useSpacing">Whether to calculate in the spacing of the scroller in the jump</param>
-		/// <param name="tweenType">What easing to use for the jump</param>
-		/// <param name="tweenTime">How long to interpolate to the jump point</param>
-		/// <param name="jumpComplete">This delegate is fired when the jump completes</param>
-		public void JumpToDataIndex(int dataIndex,
-		                            float scrollerOffset = 0,
-		                            float cellOffset = 0,
-		                            bool useSpacing = true,
-		                            Method tweenType = Method.immediate,
-		                            float tweenTime = 0f,
-		                            Action jumpComplete = null
-		)
-		{
-			var cellOffsetPosition = 0f;
-
-			if (cellOffset < 0 || 0 < cellOffset)
-			{
-				// calculate the cell offset position
-
-				// get the cell's size
-				var cellSize = GetCellViewSize(dataIndex);
-
-				if (useSpacing)
-				{
-					// if using spacing add spacing from one side
-					cellSize += spacing;
-
-					// if this is not a bounday cell, then add spacing from the other side
-					if (dataIndex > 0 && dataIndex < (cellCount - 1))
-						cellSize += spacing;
-				}
-
-				// calculate the position based on the size of the cell and the offset within that cell
-				cellOffsetPosition = cellSize * cellOffset;
-			}
-
-			var newScrollPosition = 0f;
-
-			// cache the offset for quicker calculation
-			var offset = -(scrollerOffset * scrollRectSize) + cellOffsetPosition;
-
-			if (loop)
-			{
-				// if looping, then we need to determine the closest jump position.
-				// we do that by checking all three sets of data locations, and returning the closest one
-
-				// get the scroll positions for each data set.
-				// Note: we are calculating the position based on the cell view index, not the data index here
-				var set1Position = GetScrollPositionForCellViewIndex(dataIndex) + offset;
-				var set2Position = GetScrollPositionForCellViewIndex(dataIndex + cellCount) + offset;
-				var set3Position = GetScrollPositionForCellViewIndex(dataIndex + cellCount * 2) + offset;
-
-				// get the offsets of each scroll position from the current scroll position
-				var set1Diff = (Mathf.Abs(m_ScrollPosition - set1Position));
-				var set2Diff = (Mathf.Abs(m_ScrollPosition - set2Position));
-				var set3Diff = (Mathf.Abs(m_ScrollPosition - set3Position));
-
-				// choose the smallest offset from the current position (the closest position)
-				newScrollPosition = set1Diff < set2Diff
-					? set1Diff < set3Diff ? set1Position : set3Position
-					: set2Diff < set3Diff ? set2Position : set3Position;
-
-//				if (set1Diff < set2Diff)
-//				{
-//					if (set1Diff < set3Diff)
-//					{
-//						newScrollPosition = set1Position;
-//					}
-//					else
-//					{
-//						newScrollPosition = set3Position;
-//					}
-//				}
-//				else
-//				{
-//					if (set2Diff < set3Diff)
-//					{
-//						newScrollPosition = set2Position;
-//					}
-//					else
-//					{
-//						newScrollPosition = set3Position;
-//					}
-//				}
-			}
-			else
-			{
-				// not looping, so just get the scroll position from the dataIndex
-				newScrollPosition = GetScrollPositionForDataIndex(dataIndex) + offset;
-			}
-
-
-
-			// clamp the scroll position to a valid location
-//			newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
-
-			// if spacing is used, adjust the final position
-			if (useSpacing)
-			{
-				newScrollPosition -= spacing;
-				// move back by the spacing if necessary
-//				newScrollPosition = Mathf.Clamp(newScrollPosition - spacing, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1, CellViewPositionEnum.Before));
-			}
-
-			if (scrollRect.movementType == ScrollRect.MovementType.Clamped)
-			{
-				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionForCellViewIndex(_cellViewSizeArray.Count - 1));
-			}
-
-			m_ScrollSnap.StartSnapping(tweenType, tweenTime, scrollPosition, newScrollPosition, jumpComplete, null);
-//			scrollSnap.StartSnapping(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete, null);
-
-			// start tweening
-//			m_CoTweening = StartCoroutine(TweenPosition(tweenType, tweenTime, ScrollPosition, newScrollPosition, jumpComplete));
-		}
-		*/
 
 		/// <summary>
 		/// Snaps the scroller on command. This is called internally when snapping is set to true and the velocity
@@ -736,7 +484,7 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Flag to tell the scroller to reload the data
 		/// </summary>
-//		private bool _reloadData = true;
+		private bool _reloadData = true;
 
 		/// <summary>
 		/// Flag to tell the scroller to refresh the active list of cell views
@@ -849,12 +597,6 @@ namespace Mobcast.Coffee
 		/// </summary>
 		private int _snapCellViewIndex;
 
-		/// <summary>
-		/// The cached value of the last scrollbar visibility setting. This is checked every
-		/// frame to see if the scrollbar visibility needs to be changed.
-		/// </summary>
-		private ScrollRect.ScrollbarVisibility _lastScrollbarVisibility;
-
 		private float scrollSize { get { return contentSize - scrollRectSize; } }
 
 		private float contentSize { get { return (scrollRect.vertical ? content.rect.height : content.rect.width); } }
@@ -920,17 +662,6 @@ namespace Mobcast.Coffee
 				scrollPosition = originalScrollPosition;
 			else
 				scrollPosition = loop ? _loopFirstScrollPosition : 0;
-//				if (loop)
-//				{
-//					ScrollPosition = _loopFirstScrollPosition;
-//				}
-//				else
-//				{
-//					ScrollPosition = 0;
-//				}
-
-			// set up the visibility of the scrollbar
-			ScrollbarVisibility = _scrollbarVisibility;
 		}
 
 		/// <summary>
@@ -1337,66 +1068,7 @@ namespace Mobcast.Coffee
 		HorizontalOrVerticalLayoutGroup m_LayoutGroup;
 
 
-//		void UpdateLauyout()
-//		{
-//			var type = scrollRect.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
-//			var layout = content.GetComponent<LayoutGroup>();
-//			if (!layout)
-//			{
-//				m_LayoutGroup = content.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
-//			}
-//			else if (scrollRect.vertical != (layout is VerticalLayoutGroup))
-//			{
-//#if UNITY_EDITOR
-//				if (!Application.isPlaying)
-//				{
-//					ComponentConverter.ConvertTo(layout, type);
-//					m_LayoutGroup = content.GetComponent<HorizontalOrVerticalLayoutGroup>();
-//				}
-//				else
-//#endif
-//				{
-//					RectOffset pad = layout ? layout.padding : new RectOffset();
-//					float space = (layout is HorizontalOrVerticalLayoutGroup) ? (layout as HorizontalOrVerticalLayoutGroup).spacing : 0;
-//					DestroyImmediate(layout);
-//					m_LayoutGroup = content.gameObject.AddComponent(type) as HorizontalOrVerticalLayoutGroup;
-//					m_LayoutGroup.padding = pad;
-//					m_LayoutGroup.spacing = space;
-//				}
-//			}
-//		}
-
 		public Scrollbar scrollbar { get { return scrollRect.vertical ? scrollRect.verticalScrollbar : scrollRect.horizontalScrollbar; } }
-
-//		public RectTransform.Axis m_Direction = RectTransform.Axis.Vertical;
-//
-//		public HorizontalOrVerticalLayoutGroup pagerLayoutGroup
-//		{
-//			get
-//			{
-//				if (!m_PagerLayoutGroup)
-//				{
-//					var type = scrollRect.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
-//					m_PagerLayoutGroup = new GameObject("Pager", typeof(RectTransform), type).GetComponent(type) as HorizontalOrVerticalLayoutGroup;
-//				}
-//
-//				if (scrollRect.vertical != (m_PagerLayoutGroup is VerticalLayoutGroup))
-//				{
-//					#if UNITY_EDITOR
-//					if (!Application.isPlaying)
-//						UnityEditor.EditorApplication.delayCall += UpdateLauyout;
-//					else
-//					#endif
-//						UpdateLauyout();
-//				}
-//
-//
-//				return m_PagerLayoutGroup;
-//			}
-//		}
-//
-//		HorizontalOrVerticalLayoutGroup m_PagerLayoutGroup;
-
 
 		//==== v MonoBehavior Callbacks v ====
 		/// <summary>
@@ -1404,8 +1076,6 @@ namespace Mobcast.Coffee
 		/// </summary>
 		protected virtual void Awake()
 		{
-//			GameObject go;
-
 			// cache some components
 //			m_ScrollRect = this.GetComponent<ScrollRect>();
 			m_ScrollRectTransform = scrollRect.transform as RectTransform;
@@ -1429,7 +1099,6 @@ namespace Mobcast.Coffee
 				c.anchorMin = new Vector2(0, 1);
 				c.anchorMax = Vector2.one;
 				c.pivot = new Vector2(0.5f, 1f);
-				_scrollbarVisibility = scrollRect.verticalScrollbarVisibility;
 			}
 			else
 			{
@@ -1437,7 +1106,6 @@ namespace Mobcast.Coffee
 				c.anchorMin = Vector2.zero;
 				c.anchorMax = new Vector2(0, 1f);
 				c.pivot = new Vector2(0, 0.5f);
-				_scrollbarVisibility = scrollRect.horizontalScrollbarVisibility;
 			}
 
 			c.offsetMax = Vector2.zero;
@@ -1468,7 +1136,6 @@ namespace Mobcast.Coffee
 			// set up the last values for updates
 			_lastScrollRectSize = scrollRectSize;
 			_lastLoop = loop;
-			_lastScrollbarVisibility = _scrollbarVisibility;
 
 			// スクロール値が変化した時、コールバックを受け取ります.
 			scrollRect.onValueChanged.AddListener(val =>
@@ -1490,24 +1157,14 @@ namespace Mobcast.Coffee
 		/// </summary>
 		protected virtual void LateUpdate()
 		{
+			if (_reloadData)
+			{
+				// if the reload flag is true, then reload the data
+				ReloadData();
+			}
 
-//			if (m_ScrollIndicator)
-//			{
-//				m_ScrollIndicator.SetVirticalMode(scrollRect.vertical);
-//				m_ScrollIndicator.count = cellCount;
-//
-//				var snapPosition = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_ScrollSnap.m_Alignment * 0.5f));
-//				var snapCellViewIndex = _GetCellViewIndexAtPosition(snapPosition);
-//				var snapDataIndex = snapCellViewIndex % cellCount;
-//				m_ScrollIndicator.index = snapDataIndex;
-//			}
 			m_ScrollIndicator.Update();
 			m_ScrollSnap.Update();
-//			if (_reloadData)
-//			{
-//				// if the reload flag is true, then reload the data
-//				ReloadData();
-//			}
 
 			// if the scroll rect size has changed and looping is on,
 			// or the loop setting has changed, then we need to resize
@@ -1519,62 +1176,12 @@ namespace Mobcast.Coffee
 				_lastLoop = loop;
 			}
 
-			// update the scroll bar visibility if it has changed
-			if (_lastScrollbarVisibility != _scrollbarVisibility)
-			{
-				ScrollbarVisibility = _scrollbarVisibility;
-				_lastScrollbarVisibility = _scrollbarVisibility;
-			}
-
 			if (m_NeedRefleshActive)
 			{
 				_RefreshActive();
 			}
 		}
 		//==== ^ MonoBehavior Callbacks ^ ====
-
-		/*
-		/// <summary>
-		/// This function is called when the object becomes enabled and active.
-		/// </summary>
-		protected virtual void OnEnable()
-		{
-			m_ScrollRect.onValueChanged.AddListener(ScrollRect_OnValueChanged);
-		}
-
-		/// <summary>
-		/// This function is called when the behaviour becomes disabled () or inactive.
-		/// </summary>
-		protected virtual void OnDisable()
-		{
-			m_ScrollRect.onValueChanged.RemoveListener(ScrollRect_OnValueChanged);
-		}
-
-		/// <summary>
-		/// Handler for when the scroller changes value
-		/// </summary>
-		/// <param name="val">The scroll rect's value</param>
-		private void ScrollRect_OnValueChanged(Vector2 val)
-		{
-			if (!enabled)
-				return;
-			
-			ScrollPosition = scrollRect.vertical
-				?  (1f - val.y) * scrollSize
-				: val.x * scrollSize;
-			
-			_RefreshActive();
-					
-//			// set the internal scroll position
-//			if (m_ScrollRect.vertical)
-//				ScrollPosition = (1f - val.y) * scrollSize;
-//			else
-//				ScrollPosition = val.x * scrollSize;
-//
-//			_RefreshActive();
-		}
-		*/
-
 
 		//#### v IScrollSnap Implementation v ####
 		/// <summary>
