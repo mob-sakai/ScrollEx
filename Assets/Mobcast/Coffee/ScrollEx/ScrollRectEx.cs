@@ -7,6 +7,7 @@ using UnityEngine.EventSystems;
 
 //using TweenType = ScrollTweener.TweenType;
 using Method = Mobcast.Coffee.Tweening.Method;
+using System.Collections.Generic;
 
 namespace Mobcast.Coffee
 {
@@ -16,7 +17,7 @@ namespace Mobcast.Coffee
 
 		float GetCellViewSize(int dataIndex);
 
-		ScrollCellView GetCellView(int dataIndex, int cellIndex);
+		ScrollCellView GetCellView(int dataIndex);
 	}
 
 	/// <summary>
@@ -25,13 +26,15 @@ namespace Mobcast.Coffee
 	/// power in your application.
 	/// </summary>
 	[RequireComponent(typeof(ScrollRect))]
-	public class ScrollRectEx : MonoBehaviour, IScrollSnap, IScrollPager, IScrollViewDelegate
+	public class ScrollRectEx : MonoBehaviour, IScrollSnap, IScrollPager, IScrollPool, IScrollViewDelegate
 	{
 		#region IScrollViewDelegate implementation
+
 		public int GetDataCount()
 		{
-			return content.childCount -2;
+			return content.childCount - 2;
 		}
+
 		public float GetCellViewSize(int dataIndex)
 		{
 			var rt = content.GetChild(dataIndex) as RectTransform;
@@ -42,18 +45,23 @@ namespace Mobcast.Coffee
 			else
 				return scrollRect.vertical ? rt.rect.height : rt.rect.width;
 		}
-		public ScrollCellView GetCellView(int dataIndex, int cellIndex)
+
+		public ScrollCellView GetCellView(int dataIndex)
 		{
 			return null;
 		}
+
 		#endregion
 
-		public IScrollViewDelegate scrollViewDelegate
-		{
-			get{ return m_ScrollViewDelegate ?? this; }
-			set{ m_ScrollViewDelegate = value; _reloadData = true; }
-		}
+		public IScrollViewDelegate scrollViewDelegate { get { return m_ScrollViewDelegate ?? this; } set { m_ScrollViewDelegate = value; } }
+
 		IScrollViewDelegate m_ScrollViewDelegate;
+
+
+		public IScrollPool scrollPool { get { return m_ScrollPool ?? this; } set { m_ScrollPool = value; } }
+
+		IScrollPool m_ScrollPool;
+
 
 		[SerializeField]
 		public ScrollPager m_ScrollPager;
@@ -110,12 +118,12 @@ namespace Mobcast.Coffee
 				// 座標が変更された時のみ、新しく座標を設定します.
 				if (0.01f < Mathf.Abs(m_ScrollPosition - value))
 				{
-					m_NeedRefleshActive = true;
+					_needRefleshActive = true;
 					m_ScrollPosition = value;
-					if (m_ScrollRect.vertical)
-						m_ScrollRect.verticalNormalizedPosition = 1f - (m_ScrollPosition / scrollSize);
+					if (_scrollRect.vertical)
+						_scrollRect.verticalNormalizedPosition = 1f - (m_ScrollPosition / scrollSize);
 					else
-						m_ScrollRect.horizontalNormalizedPosition = (m_ScrollPosition / scrollSize);
+						_scrollRect.horizontalNormalizedPosition = (m_ScrollPosition / scrollSize);
 				}
 			}
 		}
@@ -168,51 +176,81 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// The size of the visible portion of the scroller
 		/// </summary>
-		public float scrollRectSize { get { return scrollRect.vertical ? m_ScrollRectTransform.rect.height : m_ScrollRectTransform.rect.width; } }
+		public float scrollRectSize { get { return scrollRect.vertical ? _scrollRectTransform.rect.height : _scrollRectTransform.rect.width; } }
 
-		/// <summary>
-		/// Create a cell view, or recycle one if it already exists
-		/// </summary>
-		/// <param name="cellPrefab">The prefab to use to create the cell view</param>
-		/// <returns></returns>
-		public ScrollCellView GetCellView(ScrollCellView cellPrefab)
+		readonly Dictionary<int, Stack<ScrollCellView>> _pool = new Dictionary<int, Stack<ScrollCellView>>();
+
+		public ScrollCellView RentCellView(ScrollCellView template)
 		{
-			// see if there is a view to recycle
-			var cellView = _GetRecycledCellView(cellPrefab);
-			if (cellView == null)
-			{
-				// no recyleable cell found, so we create a new view
-				// and attach it to our container
-				var go = Instantiate(cellPrefab.gameObject);
-				cellView = go.GetComponent<ScrollCellView>();
-				cellView.transform.SetParent(content);
-				cellView.transform.localPosition = Vector3.zero;
-				cellView.transform.localRotation = Quaternion.identity;
-			}
+			var id = template.GetInstanceID();
+			Stack<ScrollCellView> stack;
+			if (_pool.TryGetValue(id, out stack) && 0 < stack.Count)
+				return stack.Pop();
 
+			var cellView = GameObject.Instantiate(template);
+			cellView.templateId = id;
+			cellView.transform.SetParent(_recycledCellViewContainer, false);
+			cellView.transform.localPosition = Vector3.zero;
+			cellView.transform.localRotation = Quaternion.identity;
+			cellView.transform.localScale = Vector3.zero;
 			return cellView;
 		}
 
+		public void ReturnCellView(ScrollCellView obj)
+		{
+			int id = obj.templateId;
+			Stack<ScrollCellView> stack;
+			if (!_pool.TryGetValue(id, out stack))
+			{
+				stack = new Stack<ScrollCellView>();
+				_pool.Add(id, stack);
+			}
+
+			if (!stack.Contains(obj))
+			{
+				obj.transform.SetParent(_recycledCellViewContainer, false);
+				obj.transform.localPosition = Vector3.zero;
+				obj.transform.localRotation = Quaternion.identity;
+				obj.transform.localScale = Vector3.zero;
+				stack.Push(obj);
+			}
+		}
+
+
 		/// <summary>
-		/// This resets the internal size list and refreshes the cell views
+		/// セルビューをプールから取得または新規作成します.
 		/// </summary>
-		/// <param name="scrollPositionFactor">The percentage of the scroller to start at between 0 and 1, 0 being the start of the scroller</param>
+		public ScrollCellView GetCellView(ScrollCellView template)
+		{
+			return scrollPool.RentCellView(template);
+		}
+
+		/// <summary>
+		/// データをリロードし、内部的なキャッシュを全てリフレッシュします.
+		/// </summary>
 		public void ReloadData(float scrollPositionFactor = 0)
 		{
 			_reloadData = false;
 
-			_RecycleAllCells();
+			// アクティブなセルビューを全てプールに返却.
+			while (_activeCellViews.Count > 0)
+				_PoolCellView(_activeCellViews[0]);
+			
+			_activeCellViewsStartIndex = 0;
+			_activeCellViewsEndIndex = 0;
 
 			_Resize(false);
 
 			m_ScrollPosition = scrollPositionFactor * scrollSize;
-			if (m_ScrollRect.vertical)
-				m_ScrollRect.verticalNormalizedPosition = 1f - scrollPositionFactor;
+			if (_scrollRect.vertical)
+				_scrollRect.verticalNormalizedPosition = 1f - scrollPositionFactor;
 			else
-				m_ScrollRect.horizontalNormalizedPosition = scrollPositionFactor;
+				_scrollRect.horizontalNormalizedPosition = scrollPositionFactor;
 		}
 
-
+		/// <summary>
+		/// アクティブなセルを全てリフレッシュします.
+		/// </summary>
 		public void RefreshActiveCellViews()
 		{
 			for (var i = 0; i < _activeCellViews.Count; i++)
@@ -221,29 +259,29 @@ namespace Mobcast.Coffee
 			}
 		}
 
-//		public void ClearAll()
-//		{
-//			ClearActive();
-//			ClearRecycled();
-//		}
-//
-//		public void ClearActive()
-//		{
-//			for (var i = 0; i < _activeCellViews.Count; i++)
-//			{
-//				DestroyImmediate(_activeCellViews[i].gameObject);
-//			}
-//			_activeCellViews.Clear();
-//		}
-//
-//		public void ClearRecycled()
-//		{
-//			for (var i = 0; i < _recycledCellViews.Count; i++)
-//			{
-//				DestroyImmediate(_recycledCellViews[i].gameObject);
-//			}
-//			_recycledCellViews.Clear();
-//		}
+		//		public void ClearAll()
+		//		{
+		//			ClearActive();
+		//			ClearRecycled();
+		//		}
+		//
+		//		public void ClearActive()
+		//		{
+		//			for (var i = 0; i < _activeCellViews.Count; i++)
+		//			{
+		//				DestroyImmediate(_activeCellViews[i].gameObject);
+		//			}
+		//			_activeCellViews.Clear();
+		//		}
+		//
+		//		public void ClearRecycled()
+		//		{
+		//			for (var i = 0; i < _recycledCellViews.Count; i++)
+		//			{
+		//				DestroyImmediate(_recycledCellViews[i].gameObject);
+		//			}
+		//			_recycledCellViews.Clear();
+		//		}
 
 		public void JumpToDataIndex(int dataIndex,
 		                            ScrollSnap.Alignment align,
@@ -349,16 +387,16 @@ namespace Mobcast.Coffee
 
 			// 先頭の要素を指定した場合、paddingサイズを返します.
 			if (cellViewIndex == 0 && beforeCell)
-				return m_ScrollRect.vertical ? padding.top : padding.left;
+				return _scrollRect.vertical ? padding.top : padding.left;
 
 			// 要素数を超えていた場合、最後のセルの位置を返します.
 			if (_cellViewOffsetArray.Count <= cellViewIndex)
 				return _cellViewOffsetArray[_cellViewOffsetArray.Count - 2];
 
 			if (beforeCell)
-				return _cellViewOffsetArray[cellViewIndex - 1] + spacing + (m_ScrollRect.vertical ? padding.top : padding.left);
+				return _cellViewOffsetArray[cellViewIndex - 1] + spacing + (_scrollRect.vertical ? padding.top : padding.left);
 			else
-				return _cellViewOffsetArray[cellViewIndex] + (m_ScrollRect.vertical ? padding.top : padding.left);
+				return _cellViewOffsetArray[cellViewIndex] + (_scrollRect.vertical ? padding.top : padding.left);
 		}
 
 		/// <summary>
@@ -389,12 +427,12 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Cached reference to the scrollRect
 		/// </summary>
-		private ScrollRect m_ScrollRect;
+		private ScrollRect _scrollRect;
 
 		/// <summary>
 		/// Cached reference to the scrollRect's transform
 		/// </summary>
-		private RectTransform m_ScrollRectTransform;
+		private RectTransform _scrollRectTransform;
 
 		/// <summary>
 		/// Flag to tell the scroller to reload the data
@@ -404,22 +442,22 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// Flag to tell the scroller to refresh the active list of cell views
 		/// </summary>
-		private bool m_NeedRefleshActive;
+		private bool _needRefleshActive;
 
 		/// <summary>
 		/// List of views that have been recycled
 		/// </summary>
-		private SmallList<ScrollCellView> _recycledCellViews = new SmallList<ScrollCellView>();
+		//		private SmallList<ScrollCellView> _recycledCellViews = new SmallList<ScrollCellView>();
 
 		/// <summary>
 		/// Cached reference to the element used to offset the first visible cell view
 		/// </summary>
-		private LayoutElement m_FirstPadder;
+		private LayoutElement _firstPadder;
 
 		/// <summary>
 		/// Cached reference to the element used to keep the cell views at the correct size
 		/// </summary>
-		private LayoutElement m_LastPadder;
+		private LayoutElement _lastPadder;
 
 		/// <summary>
 		/// Cached reference to the container that holds the recycled cell views
@@ -510,7 +548,7 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// The cell view index we are snapping to
 		/// </summary>
-		private int _snapCellViewIndex;
+		//		private int _snapCellViewIndex;
 
 		private float scrollSize { get { return contentSize - scrollRectSize; } }
 
@@ -554,7 +592,7 @@ namespace Mobcast.Coffee
 			_CalculateCellViewOffsets();
 
 			// set the size of the active cell view container based on the number of cell views there are and each of their sizes
-			if (m_ScrollRect.vertical)
+			if (_scrollRect.vertical)
 				content.sizeDelta = new Vector2(content.sizeDelta.x, _cellViewOffsetArray.Last() + padding.top + padding.bottom);
 			else
 				content.sizeDelta = new Vector2(_cellViewOffsetArray.Last() + padding.left + padding.right, content.sizeDelta.y);
@@ -575,7 +613,7 @@ namespace Mobcast.Coffee
 			// if we need to maintain our original position
 			if (keepPosition)
 				scrollPosition = originalScrollPosition;
-			else if(m_ScrollSnap.snapOnEndDrag)
+			else if (m_ScrollSnap.snapOnEndDrag)
 				JumpToDataIndex(0, m_Alignment, Method.immediate, 0);
 			else
 				scrollPosition = loop ? _loopFirstScrollPosition : 0;
@@ -615,51 +653,50 @@ namespace Mobcast.Coffee
 			}
 		}
 
-		/// <summary>
-		/// Get a recycled cell with a given identifier if available
-		/// </summary>
-		/// <param name="cellPrefab">The prefab to check for</param>
-		/// <returns></returns>
-		private ScrollCellView _GetRecycledCellView(ScrollCellView cellPrefab)
-		{
-			for (var i = 0; i < _recycledCellViews.Count; i++)
-			{
-				if (_recycledCellViews[i].cellIdentifier == cellPrefab.cellIdentifier)
-				{
-					// the cell view was found, so we use this recycled one.
-					// we also remove it from the recycled list
-					var cellView = _recycledCellViews.RemoveAt(i);
-					return cellView;
-				}
-			}
+		//		/// <summary>
+		//		/// Get a recycled cell with a given identifier if available
+		//		/// </summary>
+		//		/// <param name="cellPrefab">The prefab to check for</param>
+		//		/// <returns></returns>
+		//		private ScrollCellView _GetRecycledCellView(ScrollCellView cellPrefab)
+		//		{
+		//			for (var i = 0; i < _recycledCellViews.Count; i++)
+		//			{
+		//				if (_recycledCellViews[i].cellIdentifier == cellPrefab.cellIdentifier)
+		//				{
+		//					// the cell view was found, so we use this recycled one.
+		//					// we also remove it from the recycled list
+		//					var cellView = _recycledCellViews.RemoveAt(i);
+		//					return cellView;
+		//				}
+		//			}
+		//
+		//			return null;
+		//		}
 
-			return null;
-		}
-
 		/// <summary>
-		/// This sets up the visible cells, adding and recycling as necessary
+		/// 表示すべきセルビューをリセットします.
 		/// </summary>
 		private void _ResetVisibleCellViews()
 		{
 			int startIndex;
 			int endIndex;
 
-			// calculate the range of the visible cells
+			// 現在見えているセルビューの範囲を取得します.
 			_CalculateCurrentActiveCellRange(out startIndex, out endIndex);
 
-			// go through each previous active cell and recycle it if it no longer falls in the range
+			// 不要なセルビューをプールします.
 			var i = 0;
 			SmallList<int> remainingCellIndices = new SmallList<int>();
 			while (i < _activeCellViews.Count)
 			{
 				if (_activeCellViews[i].cellIndex < startIndex || _activeCellViews[i].cellIndex > endIndex)
 				{
-					_RecycleCell(_activeCellViews[i]);
+					_PoolCellView(_activeCellViews[i]);
 				}
 				else
 				{
-					// this cell index falls in the new range, so we add its
-					// index to the reusable list
+					// このセルインデックスは新しい描画範囲でも利用可能です.
 					remainingCellIndices.Add(_activeCellViews[i].cellIndex);
 					i++;
 				}
@@ -667,81 +704,55 @@ namespace Mobcast.Coffee
 
 			if (remainingCellIndices.Count == 0)
 			{
-				// there were no previous active cells remaining, 
-				// this list is either brand new, or we jumped to 
-				// an entirely different part of the list.
-				// just add all the new cell views
-
 				for (i = startIndex; i <= endIndex; i++)
-				{
 					_AddCellView(i, false);
-				}
 			}
 			else
 			{
-				// we are able to reuse some of the previous
-				// cell views
-
-				// first add the views that come before the 
-				// previous list, going backward so that the
-				// new views get added to the front
+				// セルインデックスを再利用します.
 				for (i = endIndex; i >= startIndex; i--)
 				{
 					if (i < remainingCellIndices.First())
-					{
 						_AddCellView(i, true);
-					}
 				}
 
-				// next add teh views that come after the
-				// previous list, going forward and adding
-				// at the end of the list
 				for (i = startIndex; i <= endIndex; i++)
 				{
 					if (i > remainingCellIndices.Last())
-					{
 						_AddCellView(i, false);
-					}
 				}
 			}
 
-			// update the start and end indices
 			_activeCellViewsStartIndex = startIndex;
 			_activeCellViewsEndIndex = endIndex;
 
-			// adjust the padding elements to offset the cell views correctly
-			_SetPadders();
+			// パディングサイズを調整します.
+			_AdjustPadding();
 		}
 
-		/// <summary>
-		/// Recycles all the active cells
-		/// </summary>
-		private void _RecycleAllCells()
-		{
-			while (_activeCellViews.Count > 0)
-				_RecycleCell(_activeCellViews[0]);
-			_activeCellViewsStartIndex = 0;
-			_activeCellViewsEndIndex = 0;
-		}
+		//		/// <summary>
+		//		/// セルビューをスクロールビュープールに返却します.
+		//		/// Recycles all the active cells
+		//		/// </summary>
+		//		private void _PoolAllCells()
+		//		{
+		//			while (_activeCellViews.Count > 0)
+		//				_PoolCellView(_activeCellViews[0]);
+		//			_activeCellViewsStartIndex = 0;
+		//			_activeCellViewsEndIndex = 0;
+		//		}
 
 		/// <summary>
-		/// Recycles one cell view
+		/// セルビューをスクロールビュープールに返却します.
 		/// </summary>
-		/// <param name="cellView"></param>
-		private void _RecycleCell(ScrollCellView cellView)
+		private void _PoolCellView(ScrollCellView cellView)
 		{
 			cellView.OnWillRecycleCellView();
 
-			// remove the cell view from the active list
 			_activeCellViews.Remove(cellView);
 
-			// add the cell view to the recycled list
-			_recycledCellViews.Add(cellView);
+			scrollPool.ReturnCellView(cellView);
 
-			// move the GameObject to the recycled container
-			cellView.transform.SetParent(_recycledCellViewContainer);
-
-			// reset the cellView's properties
 			cellView.dataIndex = 0;
 			cellView.cellIndex = 0;
 			cellView.active = false;
@@ -750,85 +761,89 @@ namespace Mobcast.Coffee
 		}
 
 		/// <summary>
-		/// Creates a cell view, or recycles if it can
+		/// セルビューを追加します.
+		/// 可能であれば、プールからセルビューを再利用します.
 		/// </summary>
-		/// <param name="cellIndex">The index of the cell view</param>
-		/// <param name="listPosition">Whether to add the cell to the beginning or the end</param>
 		private void _AddCellView(int cellIndex, bool atStart)
 		{
 			if (dataCount == 0 || scrollViewDelegate == this)
 				return;
 
-			// get the dataIndex. Modulus is used in case of looping so that the first set of cells are ignored
+			// 新しく追加されるセルビューを取得します.
 			var dataIndex = cellIndex % dataCount;
-			// request a cell view from the delegate
-			var cellView = scrollViewDelegate.GetCellView(dataIndex, cellIndex);
+			var cellView = scrollViewDelegate.GetCellView(dataIndex);
 
-			// set the cell's properties
 			cellView.cellIndex = cellIndex;
 			cellView.dataIndex = dataIndex;
 			cellView.active = true;
 
-			// add the cell view to the active container
+			// スクロールにセルビューを追加します.
 			cellView.transform.SetParent(content, false);
 			cellView.transform.localScale = Vector3.one;
 
-			// add a layout element to the cellView
-			LayoutElement layoutElement = cellView.GetComponent<LayoutElement>();
-			if (layoutElement == null)
-				layoutElement = cellView.gameObject.AddComponent<LayoutElement>();
+			LayoutElement layoutElement = cellView.GetComponent<LayoutElement>()
+			                              ?? cellView.gameObject.AddComponent<LayoutElement>();
 
-			// set the size of the layout element
-			if (m_ScrollRect.vertical)
+			// セルビューのサイズを設定します.
+			if (_scrollRect.vertical)
 				layoutElement.minHeight = _cellViewSizeArray[cellIndex] - (cellIndex > 0 ? layoutGroup.spacing : 0);
 			else
 				layoutElement.minWidth = _cellViewSizeArray[cellIndex] - (cellIndex > 0 ? layoutGroup.spacing : 0);
 
-			// add the cell to the active list
 			if (atStart)
 				_activeCellViews.AddStart(cellView);
 			else
 				_activeCellViews.Add(cellView);
 
-			// set the hierarchy position of the cell view in the container
+			// ヒエラルキー順を調整します.
 			cellView.transform.SetSiblingIndex(atStart ? 1 : content.childCount - 2);
 
 			cellView.OnChangedCellViewVisibility();
 		}
 
 		/// <summary>
-		/// This function adjusts the two padders that control the first cell view's
-		/// offset and the overall size of each cell.
+		/// 上下のパディングサイズを調整します.
 		/// </summary>
-		private void _SetPadders()
+		private void _AdjustPadding()
 		{
 			if (dataCount == 0 || scrollViewDelegate == this)
 				return;
 
-			// calculate the size of each padder
 			var firstSize = _cellViewOffsetArray[_activeCellViewsStartIndex] - _cellViewSizeArray[_activeCellViewsStartIndex];
 			var lastSize = _cellViewOffsetArray.Last() - _cellViewOffsetArray[_activeCellViewsEndIndex];
 
-			if (m_ScrollRect.vertical)
-			{
-				// set the first padder and toggle its visibility
-				m_FirstPadder.minHeight = firstSize;
-				m_FirstPadder.gameObject.SetActive(m_FirstPadder.minHeight > 0);
+			_SetPadding(_firstPadder, firstSize);
+			_SetPadding(_lastPadder, lastSize);
+//			if (_scrollRect.vertical)
+//			{
+//				// set the first padder and toggle its visibility
+//				_firstPadder.minHeight = firstSize;
+//				_firstPadder.gameObject.SetActive(_firstPadder.minHeight > 0);
+//
+//				// set the last padder and toggle its visibility
+//				_lastPadder.minHeight = lastSize;
+//				_lastPadder.gameObject.SetActive(_lastPadder.minHeight > 0);
+//			}
+//			else
+//			{
+//				// set the first padder and toggle its visibility
+//				_firstPadder.minWidth = firstSize;
+//				_firstPadder.gameObject.SetActive(_firstPadder.minWidth > 0);
+//
+//				// set the last padder and toggle its visibility
+//				_lastPadder.minWidth = lastSize;
+//				_lastPadder.gameObject.SetActive(_lastPadder.minWidth > 0);
+//			}
+		}
 
-				// set the last padder and toggle its visibility
-				m_LastPadder.minHeight = lastSize;
-				m_LastPadder.gameObject.SetActive(m_LastPadder.minHeight > 0);
-			}
+		private void _SetPadding(LayoutElement padder, float size)
+		{
+			if (_scrollRect.vertical)
+				padder.minHeight = size;
 			else
-			{
-				// set the first padder and toggle its visibility
-				m_FirstPadder.minWidth = firstSize;
-				m_FirstPadder.gameObject.SetActive(m_FirstPadder.minWidth > 0);
+				padder.minWidth = size;
 
-				// set the last padder and toggle its visibility
-				m_LastPadder.minWidth = lastSize;
-				m_LastPadder.gameObject.SetActive(m_LastPadder.minWidth > 0);
-			}
+			padder.gameObject.SetActive(size > 0);
 		}
 
 		/// <summary>
@@ -836,7 +851,7 @@ namespace Mobcast.Coffee
 		/// </summary>
 		private void _RefreshActive()
 		{
-			m_NeedRefleshActive = false;
+			_needRefleshActive = false;
 
 			int startIndex;
 			int endIndex;
@@ -847,15 +862,15 @@ namespace Mobcast.Coffee
 			{
 				if (m_ScrollPosition < _loopFirstJumpTrigger)
 				{
-					nextVelocity = m_ScrollRect.velocity;
+					nextVelocity = _scrollRect.velocity;
 					scrollPosition = _loopLastScrollPosition - (_loopFirstJumpTrigger - m_ScrollPosition);
-					m_ScrollRect.velocity = nextVelocity;
+					_scrollRect.velocity = nextVelocity;
 				}
 				else if (m_ScrollPosition > _loopLastJumpTrigger)
 				{
-					nextVelocity = m_ScrollRect.velocity;
+					nextVelocity = _scrollRect.velocity;
 					scrollPosition = _loopFirstScrollPosition + (m_ScrollPosition - _loopLastJumpTrigger);
-					m_ScrollRect.velocity = nextVelocity;
+					_scrollRect.velocity = nextVelocity;
 				}
 			}
 
@@ -908,24 +923,24 @@ namespace Mobcast.Coffee
 
 			// if the middle index is greater than the position, then search the last
 			// half of the binary tree, else search the first half
-			if ((_cellViewOffsetArray[middleIndex] + (m_ScrollRect.vertical ? padding.top : padding.left)) >= position)
+			if ((_cellViewOffsetArray[middleIndex] + (_scrollRect.vertical ? padding.top : padding.left)) >= position)
 				return _GetCellIndexAtPosition(position, startIndex, middleIndex);
 			else
 				return _GetCellIndexAtPosition(position, middleIndex + 1, endIndex);
 		}
 
-		public RectTransform content{get{ return scrollRect.content;}}
+		public RectTransform content { get { return scrollRect.content; } }
 
-//		RectTransform m_Content;
+		//		RectTransform m_Content;
 
 
 		public ScrollRect scrollRect
 		{
 			get
 			{
-				if (!m_ScrollRect)
-					m_ScrollRect = GetComponent<ScrollRect>();
-				return m_ScrollRect;
+				if (!_scrollRect)
+					_scrollRect = GetComponent<ScrollRect>();
+				return _scrollRect;
 			}
 		}
 
@@ -942,7 +957,7 @@ namespace Mobcast.Coffee
 		HorizontalOrVerticalLayoutGroup m_LayoutGroup;
 
 
-//		public Scrollbar scrollbar { get { return scrollRect.vertical ? scrollRect.verticalScrollbar : scrollRect.horizontalScrollbar; } }
+		//		public Scrollbar scrollbar { get { return scrollRect.vertical ? scrollRect.verticalScrollbar : scrollRect.horizontalScrollbar; } }
 
 		//==== v MonoBehavior Callbacks v ====
 		/// <summary>
@@ -952,7 +967,7 @@ namespace Mobcast.Coffee
 		{
 			// cache some components
 //			m_ScrollRect = this.GetComponent<ScrollRect>();
-			m_ScrollRectTransform = scrollRect.transform as RectTransform;
+			_scrollRectTransform = scrollRect.transform as RectTransform;
 			m_ScrollSnap.target = this;
 			m_ScrollPager.target = this;
 
@@ -993,19 +1008,19 @@ namespace Mobcast.Coffee
 			lg.childForceExpandWidth = true;
 
 			// create the padder objects
-			GameObject go = new GameObject("First Padder", typeof(RectTransform), typeof(LayoutElement));
+			GameObject go = new GameObject("FirstPadder", typeof(RectTransform), typeof(LayoutElement));
 			go.transform.SetParent(c, false);
 			go.SetActive(false);
-			m_FirstPadder = go.GetComponent<LayoutElement>();
+			_firstPadder = go.GetComponent<LayoutElement>();
 
-			go = new GameObject("Last Padder", typeof(RectTransform), typeof(LayoutElement));
+			go = new GameObject("LastPadder", typeof(RectTransform), typeof(LayoutElement));
 			go.transform.SetParent(c, false);
 			go.SetActive(false);
-			m_LastPadder = go.GetComponent<LayoutElement>();
+			_lastPadder = go.GetComponent<LayoutElement>();
 
 			// create the recycled cell view container
-			go = new GameObject("Recycled Cells", typeof(RectTransform));
-			go.transform.SetParent(m_ScrollRect.transform, false);
+			go = new GameObject("CellViewPool", typeof(RectTransform));
+			go.transform.SetParent(_scrollRect.transform, false);
 			go.SetActive(false);
 			_recycledCellViewContainer = go.GetComponent<RectTransform>();
 
@@ -1051,7 +1066,7 @@ namespace Mobcast.Coffee
 				_lastLoop = loop;
 			}
 
-			if (m_NeedRefleshActive)
+			if (_needRefleshActive)
 			{
 				_RefreshActive();
 			}

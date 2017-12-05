@@ -44,7 +44,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 			return (dataIndex % 2 == 0 ? 120f : 100f);
 		}
 
-		public ScrollCellView GetCellView(int dataIndex, int cellIndex)
+		public ScrollCellView GetCellView(int dataIndex)
 		{
 			TestCellView cellView = scrollView.GetCellView(cellViewPrefab) as TestCellView;
 			cellView.name = "Cell " + dataIndex.ToString();

@@ -10,6 +10,7 @@ namespace Mobcast.Coffee
 	/// </summary>
 	public abstract class ScrollCellView : MonoBehaviour
 	{
+		public int templateId { get; set;}
 		/// <summary>
 		/// The cellIdentifier is a unique string that allows the scroller
 		/// to handle different types of cells in a single list. Each type
