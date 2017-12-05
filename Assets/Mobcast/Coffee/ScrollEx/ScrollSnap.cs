@@ -12,16 +12,17 @@ namespace Mobcast.Coffee
 {
 	public interface IScrollSnap : IScrollHandler, IBeginDragHandler, IEndDragHandler
 	{
-		void Snap();
+		ScrollRect scrollRect { get;}
 
-		void SetPositionWithDir(float pos, float dir);
+		void OnTriggerSnap();
 
-		ScrollRect scrollRect { get; }
+		void OnChangeTweenPosition(float pos, bool dir);
 	}
 
 	[Serializable]
 	public class ScrollSnap
 	{
+
 		public enum Alignment
 		{
 			TopOrLeft,
@@ -29,57 +30,37 @@ namespace Mobcast.Coffee
 			BottomOrRight,
 		}
 
+#region Serialize
 
+		[SerializeField] bool m_SnapOnEndDrag = false;
+		[SerializeField] float m_ThresholdVelocity = 200;
 
-		bool m_IsDragging;
-		int m_ScrollCount;
-		Coroutine m_CoTweening;
-//		IScrollSnap m_Target;
+#endregion Serialize
 
-		public ScrollRectEx m_Target { get; set; }
+#region Public
 
-		bool m_TriggerSnap;
+		public IScrollSnap target { get; set; }
 
-		public bool m_SnapOnEndDrag = false;
-
-
-		public float m_ThresholdVerocity = 200;
-//		public Alignment m_Alignment = Alignment.Center;
-//
-//		public Method m_Method = Method.EaseOutSine;
-//
-//		public float m_Duration = 0.5f;
-
-
-//		public void Initialize(IScrollSnap target)
-//		{
-//			m_Target = target;
-//		}
 
 		public void OnScroll()
 		{
-			StopSnapping();
+			StopScrollTween();
 			m_ScrollCount = 10;
 		}
 
 		public void OnBeginDrag()
 		{
-			StopSnapping();
-			m_ScrollCount = 0;
+			StopScrollTween();
 			m_IsDragging = true;
 		}
 
 		public void OnEndDrag()
 		{
-			StopSnapping();
-			m_ScrollCount = 0;
+			StopScrollTween();
 			m_IsDragging = false;
 
 			// スナップをトリガ.
-			if (m_SnapOnEndDrag)
-			{
-				m_TriggerSnap = true;
-			}
+			m_TriggerSnap = m_SnapOnEndDrag;
 		}
 
 		public void Update()
@@ -88,71 +69,76 @@ namespace Mobcast.Coffee
 			{
 				m_TriggerSnap = true;
 			}
-			if (!m_IsDragging && m_TriggerSnap && Mathf.Abs(m_Target.scrollRect.vertical ? m_Target.scrollRect.velocity.y : m_Target.scrollRect.velocity.x) <= m_ThresholdVerocity)
+			if (!m_IsDragging && m_TriggerSnap && Mathf.Abs(target.scrollRect.vertical ? target.scrollRect.velocity.x : target.scrollRect.velocity.y) <= m_ThresholdVelocity)
 			{
-				m_TriggerSnap = false;
-				m_ScrollCount = 0;
-				m_Target.Snap();
+				target.OnTriggerSnap();
 			}
 		}
 
-		void StopSnapping()
+		public void StartScrollTween(Method tweenType, float time, float startValue, float endValue)
 		{
-			if (m_CoTweening != null)
-			{
-				(m_Target as MonoBehaviour).StopCoroutine(m_CoTweening);
-				m_CoTweening = null;
-				m_Target.scrollRect.inertia = m_OriginInertia;
-				m_Target.scrollRect.movementType = m_OriginMovementType;
-			}
+			StopScrollTween();
+
+			// Tweenが不要な場合、即終了します.
+			if (tweenType == Method.immediate || time <= 0)
+				target.OnChangeTweenPosition(endValue, 0 < (endValue - startValue));
+			else
+				m_CoTweening = target.scrollRect.StartCoroutine(CoScrollTweening(tweenType, time, startValue, endValue));
 		}
 
+#endregion Public
+
+
+#region Private
+
+		bool m_IsDragging;
+		int m_ScrollCount;
+		Coroutine m_CoTweening;
+		bool m_TriggerSnap;
 		bool m_OriginInertia = false;
 		ScrollRect.MovementType m_OriginMovementType;
 
-		public bool running { get { return m_CoTweening != null; } }
-
-		public void StartSnapping(Method tweenType, float time, float startValue, float endValue)
+		void StopScrollTween()
 		{
-			StopSnapping();
-			m_CoTweening = (m_Target as MonoBehaviour).StartCoroutine(Co_Snap(tweenType, time, startValue, endValue));
+			m_TriggerSnap = false;
+			m_ScrollCount = 0;
+			if (m_CoTweening != null)
+			{
+				target.scrollRect.StopCoroutine(m_CoTweening);
+				m_CoTweening = null;
+				target.scrollRect.inertia = m_OriginInertia;
+				target.scrollRect.movementType = m_OriginMovementType;
+			}
 		}
 
-		IEnumerator Co_Snap(Method tweenType, float time, float startValue, float endValue)
+		/// <summary>
+		/// Tweenコルーチン.
+		/// </summary>
+		IEnumerator CoScrollTweening(Method tweenType, float time, float startValue, float endValue)
 		{
-			ScrollRect scrollRect = m_Target.scrollRect;
-			float upDir = endValue - startValue;
-			m_OriginInertia = scrollRect.inertia;
-			m_OriginMovementType = scrollRect.movementType;
-			scrollRect.inertia = false;
-			scrollRect.movementType = ScrollRect.MovementType.Unrestricted;
-			if (tweenType == Method.immediate || time <= 0)
+			// Tween中はScrollRect自体の動作(inertia/movementType)を制限します.
+			var scroll = target.scrollRect;
+			scroll.velocity = Vector2.zero;
+			m_OriginInertia = scroll.inertia;
+			m_OriginMovementType = scroll.movementType;
+			scroll.inertia = false;
+			scroll.movementType = ScrollRect.MovementType.Unrestricted;
+
+			// Tweenを実行します.
+			bool positive = 0 < (endValue - startValue);
+			float unscaleTimer = 0;
+			while (unscaleTimer < time)
 			{
-				m_Target.SetPositionWithDir(endValue, upDir);
-			}
-			else
-			{
-				scrollRect.velocity = Vector2.zero;
-
-				float unscaleTimer = 0;
-
-				// while the tween has time left, use an easing function
-				while (unscaleTimer < time)
-				{
-					m_Target.SetPositionWithDir(Tweening.GetTweenValue(tweenType, startValue, endValue, unscaleTimer / time), upDir);
-					unscaleTimer += Time.unscaledDeltaTime;
-					yield return null;
-				}
-
-				// the time has expired, so we make sure the final scroll position
-				// is the actual end position.
-				m_Target.SetPositionWithDir(endValue, upDir);
+				target.OnChangeTweenPosition(Tweening.GetTweenValue(tweenType, startValue, endValue, unscaleTimer / time), positive);
+				unscaleTimer += Time.unscaledDeltaTime;
+				yield return null;
 			}
 
-			// the tween jump is complete, so we fire the delegate
-//		if (onComplete != null)
-//			onComplete();
-			StopSnapping();
+			// Tweenを停止します.
+			target.OnChangeTweenPosition(endValue, positive);
+			StopScrollTween();
+			yield break;
 		}
+#endregion Private
 	}
 }

@@ -8,14 +8,6 @@ using System.Collections.Generic;
 
 namespace Mobcast.Coffee
 {
-	public interface IScrollPager
-	{
-		int index { get; }
-
-		int count { get; }
-	}
-
-
 	[Serializable]
 	public class ScrollIndicator
 	{
@@ -27,14 +19,12 @@ namespace Mobcast.Coffee
 		int m_Index;
 		int m_Count;
 
-		public ScrollRectEx m_Target { get; set; }
-
 		[SerializeField] LayoutGroup m_LayoutGroup;
 
-		public void Update()
+		public void Update(int index, int count)
 		{
 			// 変更なし.
-			if (!m_Target || !m_LayoutGroup || (m_Count == m_Target.cellCount && m_Index == m_Target.StartDataIndex))
+			if (!m_LayoutGroup || (m_Count == count && m_Index == index))
 				return;
 
 			if (m_PagerToggle.gameObject.activeSelf)
@@ -42,26 +32,25 @@ namespace Mobcast.Coffee
 				m_PagerToggle.gameObject.SetActive(false);
 			}
 
-			m_Count = m_Target.cellCount;
-			m_Index = m_Target.StartDataIndex;
+			m_Count = count;
+			m_Index = index;
 
 			// ページャが不足している場合、新しく生成します.
 			int max = Mathf.Min(m_Limit, m_Count);
 			while (m_List.Count < max)
 			{
-				int i = m_List.Count;
+//				int i = m_List.Count;
 				Toggle toggle = UnityEngine.Object.Instantiate(m_PagerToggle);
 				toggle.transform.SetParent(m_LayoutGroup.transform);
-//				m_Target.m_ScrollSnap.running
 				// TODO: スナップに変更
-				toggle.onValueChanged.AddListener(flag =>
-					{
+//				toggle.onValueChanged.AddListener(flag =>
+//					{
 //						if(flag)
 //						{
 //							m_Target.
 //							m_Index = i;
 //						}
-					});
+//					});
 				m_List.Add(toggle);
 			}
 
