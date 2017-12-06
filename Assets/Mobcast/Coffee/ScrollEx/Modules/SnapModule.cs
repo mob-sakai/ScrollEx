@@ -7,7 +7,7 @@ using Mobcast.Coffee;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
-namespace Mobcast.Coffee.UI.Scrolling
+namespace Mobcast.Coffee.UI.ScrollModule
 {
 //	/// <summary>
 //	/// スクロールスナップハンドラー.
@@ -55,6 +55,8 @@ namespace Mobcast.Coffee.UI.Scrolling
 		/// スクロール速度が値以下になったとき、Tweenを実行します.
 		/// </summary>
 		public float thresholdVelocity { get{ return m_ThresholdVelocity;} set{ m_ThresholdVelocity = value;} }
+
+		public event Action onEndNextTween;
 
 		public void OnScroll(PointerEventData eventData)
 		{
@@ -136,6 +138,11 @@ namespace Mobcast.Coffee.UI.Scrolling
 				_coTweening = null;
 				handler.scrollRect.inertia = _inertia;
 				handler.scrollRect.movementType = _movementType;
+				handler.scrollRect.velocity = Vector2.zero;
+				if (onEndNextTween != null)
+					onEndNextTween.Invoke();
+
+				onEndNextTween = null;
 			}
 		}
 

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 
 
-namespace Mobcast.Coffee.UI.Scrolling
+namespace Mobcast.Coffee.UI.ScrollModule
 {
 	/// <summary>
 	/// セルビュー用オブジェクトプールインターフェース.

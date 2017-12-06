@@ -8,7 +8,7 @@ using UnityEngine.EventSystems;
 //using TweenType = ScrollTweener.TweenType;
 using TweenMethod = Mobcast.Coffee.Tweening.TweenMethod;
 using System.Collections.Generic;
-using Mobcast.Coffee.UI.Scrolling;
+using Mobcast.Coffee.UI.ScrollModule;
 
 namespace Mobcast.Coffee.UI
 {
@@ -22,6 +22,8 @@ namespace Mobcast.Coffee.UI
 			BottomOrRight,
 		}
 
+
+
 		public IScrollViewController controller { get; set; }
 
 		public ICellViewPool scrollPool { get; set; }
@@ -31,6 +33,10 @@ namespace Mobcast.Coffee.UI
 		public SnapModule snapModule { get{ return m_SnapModule;} }
 
 		public NaviModule naviModule { get{ return m_NaviModule;} }
+
+		public float tweenDuration { get { return m_TweenDuration; } set { m_TweenDuration = value; } }
+
+		public TweenMethod tweenMethod { get { return m_TweenMethod; } set { m_TweenMethod = value; } }
 
 #region Serialize
 
