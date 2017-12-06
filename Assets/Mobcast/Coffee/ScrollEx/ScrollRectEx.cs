@@ -11,23 +11,13 @@ using System.Collections.Generic;
 
 namespace Mobcast.Coffee
 {
-//	public interface IScrollViewDelegate
-//	{
-//		int GetDataCount();
-//
-//		float GetCellViewSize(int dataIndex);
-//
-//		ScrollCellView GetCellView(int dataIndex);
-//	}
-
 	/// <summary>
 	/// The ScrollRectEx allows you to easily set up a dynamic scroller that will recycle views for you. This means
 	/// that using only a handful of views, you can display thousands of rows. This will save memory and processing
 	/// power in your application.
 	/// </summary>
 	[RequireComponent(typeof(ScrollRect))]
-	public class ScrollRectEx : MonoBehaviour, IScrollSnapHandler, IScrollPagerHandler
-	//, IScrollViewDelegate
+	public class ScrollRectEx : MonoBehaviour, IScrollSnapHandler, IScrollPagerHandler, IScrollNavigation
 	{
 		public enum Alignment
 		{
@@ -35,11 +25,6 @@ namespace Mobcast.Coffee
 			Center,
 			BottomOrRight,
 		}
-
-
-//		public IScrollViewDelegate scrollViewDelegate { get { return m_ScrollViewDelegate ?? this; } set { m_ScrollViewDelegate = value; } }
-//
-//		IScrollViewDelegate m_ScrollViewDelegate;
 
 		public IScrollViewController controller { get; set; }
 
@@ -49,11 +34,16 @@ namespace Mobcast.Coffee
 
 		public ScrollSnap scrollSnap { get{ return m_ScrollSnap;} }
 
+		public ScrollNavigation scrollNavigator { get{ return m_ScrollNavigator;} }
+
 #region Serialize
 
 		[SerializeField] ScrollPager m_ScrollPager;
 
 		[SerializeField] ScrollSnap m_ScrollSnap;
+
+		[SerializeField] ScrollNavigation m_ScrollNavigator;
+
 
 		[SerializeField] Alignment m_Alignment = Alignment.Center;
 
@@ -267,10 +257,35 @@ namespace Mobcast.Coffee
 
 
 		/// <summary>
+		/// 目的のインデックスに移動できるかどうかを取得します.
+		/// </summary>
+		public bool CanJumpTo(int index)
+		{
+			return loop || (0 <= index && index < dataCount);
+		}
+
+
+		/// <summary>
 		/// 目的のインデックスに移動します.
 		/// </summary>
-		public void JumpToDataIndex(int dataIndex, Alignment align, TweenMethod tweenType = TweenMethod.immediate, float tweenTime = 0f)
+		public void JumpTo(int index)
 		{
+			JumpTo(index, m_Alignment, m_TweenMethod, m_TweenDuration);
+		}
+
+		/// <summary>
+		/// 目的のインデックスに移動します.
+		/// </summary>
+		public void JumpTo(int index, Alignment align, TweenMethod tweenType = TweenMethod.immediate, float tweenTime = 0f)
+		{
+			int count = dataCount;
+			if (count == 0)
+				return;
+
+			index = index % count;
+			if (index < 0)
+				index += count;
+			
 			float normalizedOffset = (int)align * 0.5f;
 			bool useSpacing = align == Alignment.Center;
 
@@ -281,7 +296,7 @@ namespace Mobcast.Coffee
 				// calculate the cell offset position
 
 				// get the cell's size
-				var cellSize = controller.GetCellViewSize(dataIndex);
+				var cellSize = controller.GetCellViewSize(index);
 
 				if (useSpacing)
 				{
@@ -289,7 +304,7 @@ namespace Mobcast.Coffee
 					cellSize += spacing;
 
 					// if this is not a bounday cell, then add spacing from the other side
-					if (dataIndex > 0 && dataIndex < (dataCount - 1))
+					if (index > 0 && index < (count - 1))
 						cellSize += spacing;
 				}
 
@@ -309,9 +324,9 @@ namespace Mobcast.Coffee
 
 				// get the scroll positions for each data set.
 				// Note: we are calculating the position based on the cell view index, not the data index here
-				var set1Position = GetScrollPositionFromIndex(dataIndex) + offset;
-				var set2Position = GetScrollPositionFromIndex(dataIndex + dataCount) + offset;
-				var set3Position = GetScrollPositionFromIndex(dataIndex + dataCount * 2) + offset;
+				var set1Position = GetScrollPositionFromIndex(index) + offset;
+				var set2Position = GetScrollPositionFromIndex(index + count) + offset;
+				var set3Position = GetScrollPositionFromIndex(index + count * 2) + offset;
 
 				// get the offsets of each scroll position from the current scroll position
 				var set1Diff = (Mathf.Abs(m_ScrollPosition - set1Position));
@@ -325,7 +340,7 @@ namespace Mobcast.Coffee
 			}
 			else
 			{
-				newScrollPosition = GetScrollPositionFromIndex(dataIndex) + offset;
+				newScrollPosition = GetScrollPositionFromIndex(index) + offset;
 			}
 
 
@@ -541,7 +556,7 @@ namespace Mobcast.Coffee
 				scrollPosition = originalScrollPosition;
 			// スナップ設定されているとき、スナップを実行します.
 			else if (scrollSnap.snapOnEndDrag)
-				JumpToDataIndex(0, m_Alignment, TweenMethod.immediate, 0);
+				JumpTo(0, m_Alignment, TweenMethod.immediate, 0);
 			// それ以外の場合、初期位置に戻します.
 			else
 				scrollPosition = loop ? _loopFirstScrollPosition : 0;
@@ -758,22 +773,21 @@ namespace Mobcast.Coffee
 
 			int startIndex;
 			int endIndex;
-			var nextVelocity = Vector2.zero;
 
 			// if looping, check to see if we scrolled past a trigger
 			if (loop)
 			{
 				if (m_ScrollPosition < _loopFirstJumpTrigger)
 				{
-					nextVelocity = _scrollRect.velocity;
+					var v = _scrollRect.velocity;
 					scrollPosition = _loopLastScrollPosition - (_loopFirstJumpTrigger - m_ScrollPosition);
-					_scrollRect.velocity = nextVelocity;
+					_scrollRect.velocity = v;
 				}
 				else if (m_ScrollPosition > _loopLastJumpTrigger)
 				{
-					nextVelocity = _scrollRect.velocity;
+					var v = _scrollRect.velocity;
 					scrollPosition = _loopFirstScrollPosition + (m_ScrollPosition - _loopLastJumpTrigger);
-					_scrollRect.velocity = nextVelocity;
+					_scrollRect.velocity = v;
 				}
 			}
 
@@ -882,11 +896,10 @@ namespace Mobcast.Coffee
 			go.SetActive(false);
 			_lastPadding = go.GetComponent<LayoutElement>();
 
-			// スナップにハンドラーを設定
+			// スクロールモジュールにハンドラーを設定
 			scrollSnap.handler = this;
-
-			// ページャハンドラーを設定
 			scrollPager.handler = this;
+			scrollNavigator.handler = this;
 
 			// デフォルトのセルビュープールを生成.
 			if (scrollPool == null)
@@ -935,6 +948,7 @@ namespace Mobcast.Coffee
 
 			scrollPager.Update();
 			scrollSnap.Update();
+			scrollNavigator.Update();
 
 			// if the scroll rect size has changed and looping is on,
 			// or the loop setting has changed, then we need to resize
@@ -962,7 +976,7 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public virtual void OnScroll(PointerEventData eventData)
 		{
-			scrollSnap.OnScroll();
+			scrollSnap.OnScroll(eventData);
 		}
 
 		/// <summary>
@@ -970,7 +984,8 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public virtual void OnBeginDrag(PointerEventData eventData)
 		{
-			scrollSnap.OnBeginDrag();
+			scrollNavigator.OnBeginDrag(eventData);
+			scrollSnap.OnBeginDrag(eventData);
 		}
 
 		/// <summary>
@@ -978,12 +993,13 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public virtual void OnEndDrag(PointerEventData eventData)
 		{
-			scrollSnap.OnEndDrag();
+			scrollNavigator.OnEndDrag(eventData);
+			scrollSnap.OnEndDrag(eventData);
 		}
 
 		public void OnTriggerSnap()
 		{
-			JumpToDataIndex(activeIndex, m_Alignment, m_TweenMethod, m_TweenDuration);
+			JumpTo(activeIndex);
 		}
 
 		public void OnChangeTweenPosition(float value, bool positive)

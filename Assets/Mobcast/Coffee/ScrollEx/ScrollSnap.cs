@@ -39,6 +39,8 @@ namespace Mobcast.Coffee
 
 #region Public
 
+
+
 		public IScrollSnapHandler handler { get; set;}
 
 		/// <summary>
@@ -51,36 +53,54 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public float thresholdVelocity { get{ return m_ThresholdVelocity;} set{ m_ThresholdVelocity = value;} }
 
-		public void OnScroll()
+		public void OnScroll(PointerEventData eventData)
 		{
 			StopScrollTween();
 			_mouseScrollCount = 10;
 		}
 
-		public void OnBeginDrag()
+		public void OnBeginDrag(PointerEventData eventData)
 		{
 			StopScrollTween();
 			_isDragging = true;
 		}
 
-		public void OnEndDrag()
+		public void OnEndDrag(PointerEventData eventData)
 		{
-			StopScrollTween();
 			_isDragging = false;
+			// スナップをトリガ. Tween中の場合はトリガしない.
+			_triggerSnap = (_coTweening == null) && snapOnEndDrag;
 
-			// スナップをトリガ.
-			_triggerSnap = snapOnEndDrag;
+			_oldVelocity = velocity;
 		}
+
+		float velocity { get { return handler.scrollRect.vertical ? handler.scrollRect.velocity.y : handler.scrollRect.velocity.x; } }
 
 		public void Update()
 		{
-			if (0 < _mouseScrollCount && _mouseScrollCount-- == 0 && snapOnEndDrag)
+			if (0 < _mouseScrollCount && _mouseScrollCount-- == 0 && (_coTweening == null) && snapOnEndDrag)
 			{
 				_triggerSnap = true;
 			}
-			if (!_isDragging && _triggerSnap && Mathf.Abs(handler.scrollRect.vertical ? handler.scrollRect.velocity.x : handler.scrollRect.velocity.y) <= thresholdVelocity)
+
+			if (!_isDragging && _triggerSnap)
 			{
-				handler.OnTriggerSnap();
+				float v = velocity;
+				float average = (v + _oldVelocity) / 2;
+
+				if (Mathf.Abs(average) <= thresholdVelocity)
+				{
+					_triggerSnap = false;
+					handler.OnTriggerSnap();
+				}
+				else if (handler.scrollRect.inertia && v == 0f)
+				{
+					v = average;
+					handler.scrollRect.velocity = handler.scrollRect.vertical
+						? new Vector2(0, v)
+						: new Vector2(v, 0); 
+				}
+				_oldVelocity = v;
 			}
 		}
 
@@ -101,6 +121,7 @@ namespace Mobcast.Coffee
 		bool _triggerSnap;
 		bool _inertia = false;
 		ScrollRect.MovementType _movementType;
+		float _oldVelocity = 0;
 
 		void StopScrollTween()
 		{

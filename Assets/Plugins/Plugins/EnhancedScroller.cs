@@ -1376,6 +1376,10 @@ namespace EnhancedUI.EnhancedScroller
                     ScrollPosition = _loopFirstScrollPosition + (_scrollPosition - _loopLastJumpTrigger);
                     _scrollRect.velocity = velocity;
                 }
+				else
+				{
+					Debug.Log("怪しい３");
+				}
             }
 
             // get the range of visibile cells

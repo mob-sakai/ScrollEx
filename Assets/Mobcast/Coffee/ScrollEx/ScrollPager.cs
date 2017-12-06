@@ -11,7 +11,9 @@ namespace Mobcast.Coffee
 
 	public interface IScrollPagerHandler
 	{
+		int activeIndex { get;}
 
+		void JumpTo(int index);
 
 		/// <summary>
 		/// 最大ページ数を取得します.
@@ -69,18 +71,20 @@ namespace Mobcast.Coffee
 			int max = Mathf.Min(m_Limit, _count);
 			while (_toggles.Count < max)
 			{
-				//				int i = m_List.Count;
+				int i = _toggles.Count;
 				Toggle toggle = UnityEngine.Object.Instantiate(m_Template);
+				toggle.name = "PageToggle_" + i;
 				toggle.transform.SetParent(m_LayoutGroup.transform);
+
 				// TODO: スナップに変更
-				//				toggle.onValueChanged.AddListener(flag =>
-				//					{
-				//						if(flag)
-				//						{
-				//							m_Target.
-				//							m_Index = i;
-				//						}
-				//					});
+				toggle.onValueChanged.AddListener(flag =>
+					{
+						if(flag)
+						{
+							if(handler.activeIndex != i)
+								handler.JumpTo(i);
+						}
+					});
 				_toggles.Add(toggle);
 			}
 
