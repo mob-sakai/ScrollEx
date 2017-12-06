@@ -8,16 +8,12 @@ using UnityEngine.EventSystems;
 //using TweenType = ScrollTweener.TweenType;
 using TweenMethod = Mobcast.Coffee.Tweening.TweenMethod;
 using System.Collections.Generic;
+using Mobcast.Coffee.UI.Scrolling;
 
-namespace Mobcast.Coffee
+namespace Mobcast.Coffee.UI
 {
-	/// <summary>
-	/// The ScrollRectEx allows you to easily set up a dynamic scroller that will recycle views for you. This means
-	/// that using only a handful of views, you can display thousands of rows. This will save memory and processing
-	/// power in your application.
-	/// </summary>
 	[RequireComponent(typeof(ScrollRect))]
-	public class ScrollRectEx : MonoBehaviour, IScrollSnapHandler, IScrollPagerHandler, IScrollNavigation
+	public class ScrollRectEx : MonoBehaviour, IScrollHandler, IBeginDragHandler, IEndDragHandler
 	{
 		public enum Alignment
 		{
@@ -28,21 +24,21 @@ namespace Mobcast.Coffee
 
 		public IScrollViewController controller { get; set; }
 
-		public IScrollCellViewPool scrollPool { get; set; }
+		public ICellViewPool scrollPool { get; set; }
 
-		public ScrollPager scrollPager { get{ return m_ScrollPager;} }
+		public IndicatorModule indicatorModule { get{ return m_IndicatorModule;} }
 
-		public ScrollSnap scrollSnap { get{ return m_ScrollSnap;} }
+		public SnapModule snapModule { get{ return m_SnapModule;} }
 
-		public ScrollNavigation scrollNavigator { get{ return m_ScrollNavigator;} }
+		public NaviModule naviModule { get{ return m_NaviModule;} }
 
 #region Serialize
 
-		[SerializeField] ScrollPager m_ScrollPager;
+		[SerializeField] IndicatorModule m_IndicatorModule;
 
-		[SerializeField] ScrollSnap m_ScrollSnap;
+		[SerializeField] SnapModule m_SnapModule;
 
-		[SerializeField] ScrollNavigation m_ScrollNavigator;
+		[SerializeField] NaviModule m_NaviModule;
 
 
 		[SerializeField] Alignment m_Alignment = Alignment.Center;
@@ -293,51 +289,42 @@ namespace Mobcast.Coffee
 
 			if (normalizedOffset < 0 || 0 < normalizedOffset)
 			{
-				// calculate the cell offset position
-
-				// get the cell's size
 				var cellSize = controller.GetCellViewSize(index);
 
+				// セルビュー間スペースを考慮します.
 				if (useSpacing)
 				{
-					// if using spacing add spacing from one side
 					cellSize += spacing;
-
-					// if this is not a bounday cell, then add spacing from the other side
 					if (index > 0 && index < (count - 1))
 						cellSize += spacing;
 				}
 
-				// calculate the position based on the size of the cell and the offset within that cell
 				cellOffsetPosition = cellSize * normalizedOffset;
 			}
 
 			var newScrollPosition = 0f;
-
-			// cache the offset for quicker calculation
 			var offset = -(normalizedOffset * scrollRectSize) + cellOffsetPosition;
 
+			// ループの時は最も近いセルビューにジャンプします.
+			// ループには最低3つのセルビューオフセットが存在するため、そのうち一番近いセルビューが選択されます.
 			if (loop)
 			{
-				// if looping, then we need to determine the closest jump position.
-				// we do that by checking all three sets of data locations, and returning the closest one
-
-				// get the scroll positions for each data set.
-				// Note: we are calculating the position based on the cell view index, not the data index here
+				// セルビュー座標.
 				var set1Position = GetScrollPositionFromIndex(index) + offset;
 				var set2Position = GetScrollPositionFromIndex(index + count) + offset;
 				var set3Position = GetScrollPositionFromIndex(index + count * 2) + offset;
 
-				// get the offsets of each scroll position from the current scroll position
+				// 現在地からの差異.
 				var set1Diff = (Mathf.Abs(m_ScrollPosition - set1Position));
 				var set2Diff = (Mathf.Abs(m_ScrollPosition - set2Position));
 				var set3Diff = (Mathf.Abs(m_ScrollPosition - set3Position));
 
-				// choose the smallest offset from the current position (the closest position)
+				// 最も近いセルビューを選択.
 				newScrollPosition = set1Diff < set2Diff
 					? set1Diff < set3Diff ? set1Position : set3Position
 					: set2Diff < set3Diff ? set2Position : set3Position;
 			}
+			// 非ループ時は対象のセルビューにジャンプします.
 			else
 			{
 				newScrollPosition = GetScrollPositionFromIndex(index) + offset;
@@ -349,12 +336,14 @@ namespace Mobcast.Coffee
 				newScrollPosition -= spacing;
 			}
 
-			if (scrollRect.movementType == ScrollRect.MovementType.Clamped)
+			// Unrestricted以外の場合、スクロール領域は制限されます.
+			if (scrollRect.movementType != ScrollRect.MovementType.Unrestricted)
 			{
-				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionFromIndex(_cellViewSizeArray.Count - 1));
+				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, scrollSize);
+//				newScrollPosition = Mathf.Clamp(newScrollPosition, 0, GetScrollPositionFromIndex(_cellViewSizeArray.Count - 1));
 			}
 
-			scrollSnap.StartScrollTween(tweenType, tweenTime, scrollPosition, newScrollPosition);
+			snapModule.StartScrollTween(tweenType, tweenTime, scrollPosition, newScrollPosition);
 		}
 
 
@@ -485,8 +474,14 @@ namespace Mobcast.Coffee
 		/// </summary>
 		//		private int _snapCellViewIndex;
 
+		/// <summary>
+		/// スクロール可能な領域の大きさを取得します.
+		/// </summary>
 		private float scrollSize { get { return contentSize - scrollRectSize; } }
 
+		/// <summary>
+		/// コンテンツ全体の大きさを取得します.
+		/// </summary>
 		private float contentSize { get { return (scrollRect.vertical ? content.rect.height : content.rect.width); } }
 
 
@@ -555,7 +550,7 @@ namespace Mobcast.Coffee
 			if (keepPosition)
 				scrollPosition = originalScrollPosition;
 			// スナップ設定されているとき、スナップを実行します.
-			else if (scrollSnap.snapOnEndDrag)
+			else if (snapModule.snapOnEndDrag)
 				JumpTo(0, m_Alignment, TweenMethod.immediate, 0);
 			// それ以外の場合、初期位置に戻します.
 			else
@@ -886,29 +881,29 @@ namespace Mobcast.Coffee
 			lg.childForceExpandWidth = true;
 
 			// create the padder objects
-			GameObject go = new GameObject("FirstPadder", typeof(RectTransform), typeof(LayoutElement));
+			GameObject go = new GameObject("___FirstPadder", typeof(RectTransform), typeof(LayoutElement));
 			go.transform.SetParent(c, false);
 			go.SetActive(false);
 			_firstPadding = go.GetComponent<LayoutElement>();
 
-			go = new GameObject("LastPadder", typeof(RectTransform), typeof(LayoutElement));
+			go = new GameObject("___LastPadder", typeof(RectTransform), typeof(LayoutElement));
 			go.transform.SetParent(c, false);
 			go.SetActive(false);
 			_lastPadding = go.GetComponent<LayoutElement>();
 
 			// スクロールモジュールにハンドラーを設定
-			scrollSnap.handler = this;
-			scrollPager.handler = this;
-			scrollNavigator.handler = this;
+			snapModule.handler = this;
+			indicatorModule.handler = this;
+			naviModule.handler = this;
 
 			// デフォルトのセルビュープールを生成.
 			if (scrollPool == null)
 			{
-				go = new GameObject("CellViewPool", typeof(RectTransform));
+				go = new GameObject("___CellViewPool", typeof(RectTransform));
 				go.transform.SetParent(_scrollRect.transform, false);
 				go.SetActive(false);
 //				_cellViewPool = go.GetComponent<RectTransform>();
-				scrollPool = new ScrollCellViewPool(go.GetComponent<RectTransform>());
+				scrollPool = new DefaultCellViewPoolModule(go.GetComponent<RectTransform>());
 			}
 
 			// デフォルトのスクロールビューコントローラ生成.
@@ -946,9 +941,9 @@ namespace Mobcast.Coffee
 				ReloadData();
 			}
 
-			scrollPager.Update();
-			scrollSnap.Update();
-			scrollNavigator.Update();
+			indicatorModule.Update();
+			snapModule.Update();
+			naviModule.Update();
 
 			// if the scroll rect size has changed and looping is on,
 			// or the loop setting has changed, then we need to resize
@@ -976,7 +971,7 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public virtual void OnScroll(PointerEventData eventData)
 		{
-			scrollSnap.OnScroll(eventData);
+			snapModule.OnScroll(eventData);
 		}
 
 		/// <summary>
@@ -984,8 +979,8 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public virtual void OnBeginDrag(PointerEventData eventData)
 		{
-			scrollNavigator.OnBeginDrag(eventData);
-			scrollSnap.OnBeginDrag(eventData);
+			naviModule.OnBeginDrag(eventData);
+			snapModule.OnBeginDrag(eventData);
 		}
 
 		/// <summary>
@@ -993,8 +988,8 @@ namespace Mobcast.Coffee
 		/// </summary>
 		public virtual void OnEndDrag(PointerEventData eventData)
 		{
-			scrollNavigator.OnEndDrag(eventData);
-			scrollSnap.OnEndDrag(eventData);
+			naviModule.OnEndDrag(eventData);
+			snapModule.OnEndDrag(eventData);
 		}
 
 		public void OnTriggerSnap()

@@ -6,40 +6,47 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 
 
-namespace Mobcast.Coffee
+namespace Mobcast.Coffee.UI.Scrolling
 {
 
-	public interface IScrollPagerHandler
-	{
-		int activeIndex { get; }
+//	/// <summary>
+//	/// スクロールインジケータハンドラー.
+//	/// </summary>
+//	public interface IIndicatorHandler
+//	{
+//		int activeIndex { get; }
+//
+//		void JumpTo(int index);
+//
+//		/// <summary>
+//		/// 最大ページ数を取得します.
+//		/// </summary>
+//		int GetPageCount();
+//
+//		/// <summary>
+//		/// 現在のページ数を取得します.
+//		/// </summary>
+//		int GetPageIndex();
+//	}
 
-		void JumpTo(int index);
-
-		/// <summary>
-		/// 最大ページ数を取得します.
-		/// </summary>
-		int GetPageCount();
-
-		/// <summary>
-		/// 現在のページ数を取得します.
-		/// </summary>
-		int GetPageIndex();
-	}
-
+	/// <summary>
+	/// 現在のインデックスをインジケータ表示するモジュールです.
+	/// インジケータをクリックすると対象のインデックスに移動できます.
+	/// </summary>
 	[Serializable]
-	public class ScrollPager
+	public class IndicatorModule
 	{
 #region Serialize
 
+		[SerializeField] LayoutGroup m_LayoutGroup;
 		[SerializeField] public Toggle m_Template = null;
 		[SerializeField] int m_Limit = 10;
-		[SerializeField] LayoutGroup m_LayoutGroup;
 
 #endregion Serialize
 
 #region Public
 
-		public IScrollPagerHandler handler { get; set; }
+		public ScrollRectEx handler { get; set; }
 
 		public Toggle template { get { return m_Template; } set { m_Template = value; } }
 
@@ -53,8 +60,8 @@ namespace Mobcast.Coffee
 				return;
 
 			// 変更なし.
-			int index = handler.GetPageIndex();
-			int count = handler.GetPageCount();
+			int index = handler.activeIndex;
+			int count = handler.dataCount;
 			if (!m_LayoutGroup || (_count == count && _index == index))
 				return;
 

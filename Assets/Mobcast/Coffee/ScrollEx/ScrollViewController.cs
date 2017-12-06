@@ -4,15 +4,15 @@ using UnityEngine.UI;
 
 
 
-namespace Mobcast.Coffee
+namespace Mobcast.Coffee.UI
 {
 	/// <summary>
-	/// スクロールビューコントローラインターフェース.
+	/// スクロールビューの制御インターフェース.
 	/// </summary>
 	public interface IScrollViewController
 	{
 		/// <summary>
-		/// コントローラーがもつ、データの要素数を取得します.
+		/// データの要素数を取得します.
 		/// </summary>
 		int GetDataCount();
 
@@ -28,12 +28,11 @@ namespace Mobcast.Coffee
 	}
 
 	/// <summary>
-	/// デフォルトスクロールビューコントローラ.
-	/// このコントローラはデータを持たず、
+	/// デフォルトのスクロールビュー制御.
+	/// ScrollRectの下位互換のためにあり、データを持ちません.
 	/// </summary>
-	public class DefaultScrollViewController : IScrollViewController
+	public sealed class DefaultScrollViewController : IScrollViewController
 	{
-		
 		public DefaultScrollViewController(ScrollRect scroll)
 		{
 			_scroll = scroll;

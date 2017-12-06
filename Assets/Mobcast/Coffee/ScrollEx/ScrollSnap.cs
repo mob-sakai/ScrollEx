@@ -7,28 +7,33 @@ using Mobcast.Coffee;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
-namespace Mobcast.Coffee
+namespace Mobcast.Coffee.UI.Scrolling
 {
+//	/// <summary>
+//	/// スクロールスナップハンドラー.
+//	/// </summary>
+//	public interface IScrollSnapperHandler : IScrollHandler, IBeginDragHandler, IEndDragHandler
+//	{
+//		ScrollRect scrollRect { get;}
+//
+//		/// <summary>
+//		/// このメソッドは、スナップがトリガされたときにコールされます.
+//		/// </summary>
+//		void OnTriggerSnap();
+//
+//		/// <summary>
+//		/// このメソッドは、Tweenによるスクロール座標の変化があった時にコールされます.
+//		/// </summary>
+//		void OnChangeTweenPosition(float pos, bool dir);
+//	}
+
 	/// <summary>
-	/// スクロールスナップハンドラー.
+	/// スクロールスナッパー.
+	/// スクロール領域をオブジェクトにスナップさせるモジュールです.
+	/// ドラッグ終了後にスナップをトリガー出来ます.
 	/// </summary>
-	public interface IScrollSnapHandler : IScrollHandler, IBeginDragHandler, IEndDragHandler
-	{
-		ScrollRect scrollRect { get;}
-
-		/// <summary>
-		/// このメソッドは、スナップがトリガされたときにコールされます.
-		/// </summary>
-		void OnTriggerSnap();
-
-		/// <summary>
-		/// このメソッドは、Tweenによるスクロール座標の変化があった時にコールされます.
-		/// </summary>
-		void OnChangeTweenPosition(float pos, bool dir);
-	}
-
 	[Serializable]
-	public class ScrollSnap
+	public class SnapModule
 	{
 #region Serialize
 
@@ -39,9 +44,7 @@ namespace Mobcast.Coffee
 
 #region Public
 
-
-
-		public IScrollSnapHandler handler { get; set;}
+		public ScrollRectEx handler { get; set;}
 
 		/// <summary>
 		/// ドラッグが終了した際、スナップをトリガします.

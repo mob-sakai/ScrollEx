@@ -5,24 +5,23 @@ using System;
 using UnityEngine.UI;
 
 
-namespace Mobcast.Coffee
+namespace Mobcast.Coffee.UI.Scrolling
 {
-	/// <summary>
-	/// スクロールビューコントローラインターフェース.
-	/// </summary>
-	public interface IScrollNavigation : IBeginDragHandler, IEndDragHandler
-	{
-		ScrollRect scrollRect { get;}
-
-		int activeIndex { get;}
-
-		bool CanJumpTo(int index);
-		void JumpTo(int index);
-	}
-
+//	/// <summary>
+//	/// スクロールビューコントローラインターフェース.
+//	/// </summary>
+//	public interface IScrollNavigation : IBeginDragHandler, IEndDragHandler
+//	{
+//		ScrollRect scrollRect { get;}
+//
+//		int activeIndex { get;}
+//
+//		bool CanJumpTo(int index);
+//		void JumpTo(int index);
+//	}
 
 	[Serializable]
-	public class ScrollNavigation
+	public class NaviModule
 	{
 #region Serialize
 
@@ -35,7 +34,7 @@ namespace Mobcast.Coffee
 
 #region Public
 
-		public IScrollNavigation handler { get; set;}
+		public ScrollRectEx handler { get; set;}
 		public float swipeThreshold { get{ return m_SwipeThreshold;} set{ m_SwipeThreshold = value;} }
 		public Button previousButton { get{ return m_PreviousButton;} set{ m_PreviousButton = value; _changedButton = true;} }
 		public Button nextButton { get{ return m_NextButton;} set{ m_NextButton = value; _changedButton = true;} }
@@ -99,7 +98,6 @@ namespace Mobcast.Coffee
 
 
 #endregion Public
-
 
 #region Private
 

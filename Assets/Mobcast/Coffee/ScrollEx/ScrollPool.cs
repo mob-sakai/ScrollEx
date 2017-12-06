@@ -4,12 +4,12 @@ using System.Collections.Generic;
 
 
 
-namespace Mobcast.Coffee
+namespace Mobcast.Coffee.UI.Scrolling
 {
 	/// <summary>
-	/// セルビュープールインターフェース.
+	/// セルビュー用オブジェクトプールインターフェース.
 	/// </summary>
-	public interface IScrollCellViewPool
+	public interface ICellViewPool
 	{
 		/// <summary>
 		/// セルビューをプールから取得または新規作成します.
@@ -22,9 +22,13 @@ namespace Mobcast.Coffee
 		void ReturnCellView(ScrollCellView obj);
 	}
 
-	public class ScrollCellViewPool : IScrollCellViewPool
+	/// <summary>
+	/// セルビューのオブジェクトプール管理モジュールです(デフォルト).
+	/// プール内の未使用のインスタンス、または新しいインスタンスを返します.
+	/// </summary>
+	public class DefaultCellViewPoolModule : ICellViewPool
 	{
-		public ScrollCellViewPool(Transform root)
+		public DefaultCellViewPoolModule(Transform root)
 		{
 			_root = root;
 		}
