@@ -11,7 +11,7 @@ namespace Mobcast.Coffee
 
 	public interface IScrollPagerHandler
 	{
-		int activeIndex { get;}
+		int activeIndex { get; }
 
 		void JumpTo(int index);
 
@@ -30,6 +30,7 @@ namespace Mobcast.Coffee
 	public class ScrollPager
 	{
 #region Serialize
+
 		[SerializeField] public Toggle m_Template = null;
 		[SerializeField] int m_Limit = 10;
 		[SerializeField] LayoutGroup m_LayoutGroup;
@@ -37,16 +38,14 @@ namespace Mobcast.Coffee
 #endregion Serialize
 
 #region Public
-		public IScrollPagerHandler handler { get; set;}
 
-		public Toggle template { get{ return m_Template;} set{ m_Template = value;} }
-		public int limit { get{ return m_Limit;} set{ m_Limit = value;} }
-		public LayoutGroup layoutGroup { get{ return m_LayoutGroup;} set{ m_LayoutGroup = value;} }
+		public IScrollPagerHandler handler { get; set; }
 
-//		public ScrollPager (IScrollPagerHandler handler)
-//		{
-//			handler = handler;
-//		}
+		public Toggle template { get { return m_Template; } set { m_Template = value; } }
+
+		public int limit { get { return m_Limit; } set { m_Limit = value; } }
+
+		public LayoutGroup layoutGroup { get { return m_LayoutGroup; } set { m_LayoutGroup = value; } }
 
 		public void Update()
 		{
@@ -79,11 +78,11 @@ namespace Mobcast.Coffee
 				// TODO: スナップに変更
 				toggle.onValueChanged.AddListener(flag =>
 					{
-						if(flag)
-						{
-							if(handler.activeIndex != i)
-								handler.JumpTo(i);
-						}
+						if (!flag || handler.activeIndex == i)
+							return;
+						
+						handler.JumpTo(i);
+						toggle.isOn = false;
 					});
 				_toggles.Add(toggle);
 			}
@@ -95,12 +94,15 @@ namespace Mobcast.Coffee
 				_toggles[i].isOn = (i == _index);
 			}
 		}
+
 #endregion Public
 
 #region Private
+
 		List< Toggle> _toggles = new List<Toggle>();
 		int _index;
 		int _count;
+
 #endregion Private
 	}
 }
