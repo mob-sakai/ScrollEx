@@ -9,7 +9,7 @@ namespace Mobcast.Coffee
 		/// <summary>
 		/// The easing type
 		/// </summary>
-		public enum Method
+		public enum TweenMethod
 		{
 			immediate,
 			linear,
@@ -46,73 +46,73 @@ namespace Mobcast.Coffee
 			EaseInOutElastic
 		}
 
-		public static float GetTweenValue(Method tweenType, float startValue, float endValue, float val)
+		public static float GetTweenValue(TweenMethod tweenType, float startValue, float endValue, float val)
 		{
 			switch (tweenType)
 			{
-				case Method.linear:
+				case TweenMethod.linear:
 					return Linear(startValue, endValue, val);
-				case Method.spring:
+				case TweenMethod.spring:
 					return Spring(startValue, endValue, val);
-				case Method.EaseInQuad:
+				case TweenMethod.EaseInQuad:
 					return EaseInQuad(startValue, endValue, val);
-				case Method.EaseOutQuad:
+				case TweenMethod.EaseOutQuad:
 					return EaseOutQuad(startValue, endValue, val);
-				case Method.EaseInOutQuad:
+				case TweenMethod.EaseInOutQuad:
 					return EaseInOutQuad(startValue, endValue, val);
-				case Method.EaseInCubic:
+				case TweenMethod.EaseInCubic:
 					return EaseInCubic(startValue, endValue, val);
-				case Method.EaseOutCubic:
+				case TweenMethod.EaseOutCubic:
 					return EaseOutCubic(startValue, endValue, val);
-				case Method.EaseInOutCubic:
+				case TweenMethod.EaseInOutCubic:
 					return EaseInOutCubic(startValue, endValue, val);
-				case Method.EaseInQuart:
+				case TweenMethod.EaseInQuart:
 					return EaseInQuart(startValue, endValue, val);
-				case Method.EaseOutQuart:
+				case TweenMethod.EaseOutQuart:
 					return EaseOutQuart(startValue, endValue, val);
-				case Method.EaseInOutQuart:
+				case TweenMethod.EaseInOutQuart:
 					return EaseInOutQuart(startValue, endValue, val);
-				case Method.EaseInQuint:
+				case TweenMethod.EaseInQuint:
 					return EaseInQuint(startValue, endValue, val);
-				case Method.EaseOutQuint:
+				case TweenMethod.EaseOutQuint:
 					return EaseOutQuint(startValue, endValue, val);
-				case Method.EaseInOutQuint:
+				case TweenMethod.EaseInOutQuint:
 					return EaseInOutQuint(startValue, endValue, val);
-				case Method.EaseInSine:
+				case TweenMethod.EaseInSine:
 					return EaseInSine(startValue, endValue, val);
-				case Method.EaseOutSine:
+				case TweenMethod.EaseOutSine:
 					return EaseOutSine(startValue, endValue, val);
-				case Method.EaseInOutSine:
+				case TweenMethod.EaseInOutSine:
 					return EaseInOutSine(startValue, endValue, val);
-				case Method.EaseInExpo:
+				case TweenMethod.EaseInExpo:
 					return EaseInExpo(startValue, endValue, val);
-				case Method.EaseOutExpo:
+				case TweenMethod.EaseOutExpo:
 					return EaseOutExpo(startValue, endValue, val);
-				case Method.EaseInOutExpo:
+				case TweenMethod.EaseInOutExpo:
 					return EaseInOutExpo(startValue, endValue, val);
-				case Method.EaseInCirc:
+				case TweenMethod.EaseInCirc:
 					return EaseInCirc(startValue, endValue, val);
-				case Method.EaseOutCirc:
+				case TweenMethod.EaseOutCirc:
 					return EaseOutCirc(startValue, endValue, val);
-				case Method.EaseInOutCirc:
+				case TweenMethod.EaseInOutCirc:
 					return EaseInOutCirc(startValue, endValue, val);
-				case Method.EaseInBounce:
+				case TweenMethod.EaseInBounce:
 					return EaseInBounce(startValue, endValue, val);
-				case Method.EaseOutBounce:
+				case TweenMethod.EaseOutBounce:
 					return EaseOutBounce(startValue, endValue, val);
-				case Method.EaseInOutBounce:
+				case TweenMethod.EaseInOutBounce:
 					return EaseInOutBounce(startValue, endValue, val);
-				case Method.EaseInBack:
+				case TweenMethod.EaseInBack:
 					return EaseInBack(startValue, endValue, val);
-				case Method.EaseOutBack:
+				case TweenMethod.EaseOutBack:
 					return EaseOutBack(startValue, endValue, val);
-				case Method.EaseInOutBack:
+				case TweenMethod.EaseInOutBack:
 					return EaseInOutBack(startValue, endValue, val);
-				case Method.EaseInElastic:
+				case TweenMethod.EaseInElastic:
 					return EaseInElastic(startValue, endValue, val);
-				case Method.EaseOutElastic:
+				case TweenMethod.EaseOutElastic:
 					return EaseOutElastic(startValue, endValue, val);
-				case Method.EaseInOutElastic:
+				case TweenMethod.EaseInOutElastic:
 					return EaseInOutElastic(startValue, endValue, val);
 				default:
 					return endValue;

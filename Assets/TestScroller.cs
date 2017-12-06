@@ -30,7 +30,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 	///  - What each cell size is (GetCellSize)
 	///  - What the cell at a given index should be (GetCell)
 	/// </summary>
-	public class TestScroller : MonoBehaviour, IScrollViewDelegate
+	public class TestScroller : MonoBehaviour, IScrollViewController
 	{
 		#region IScrollViewDelegate implementation
 
@@ -41,7 +41,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 
 		public float GetCellViewSize(int dataIndex)
 		{
-			return (dataIndex % 2 == 0 ? 120f : 100f);
+			return (dataIndex % 2 == 0 ? 200 : 100f);
 		}
 
 		public ScrollCellView GetCellView(int dataIndex)
@@ -79,7 +79,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		/// </summary>
 		void Start()
 		{
-			scrollView.scrollViewDelegate = this;
+			scrollView.controller = this;
 			LoadLargeData();
 		}
 

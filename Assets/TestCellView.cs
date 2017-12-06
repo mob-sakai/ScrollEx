@@ -32,10 +32,10 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		public override void RefreshCellView()
 		{
 		}
-		public override void OnChangedCellViewVisibility()
+		public override void OnChangedVisibility(bool visible)
 		{
 		}
-		public override void OnWillRecycleCellView()
+		public override void OnBeforePool()
 		{
 		}
 		#endregion

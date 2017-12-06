@@ -6,30 +6,30 @@ using UnityEngine.UI;
 using Mobcast.Coffee;
 using UnityEngine.EventSystems;
 using System.Collections.Generic;
-using Method = Mobcast.Coffee.Tweening.Method;
 
 namespace Mobcast.Coffee
 {
-	public interface IScrollSnap : IScrollHandler, IBeginDragHandler, IEndDragHandler
+	/// <summary>
+	/// スクロールスナップハンドラー.
+	/// </summary>
+	public interface IScrollSnapHandler : IScrollHandler, IBeginDragHandler, IEndDragHandler
 	{
 		ScrollRect scrollRect { get;}
 
+		/// <summary>
+		/// このメソッドは、スナップがトリガされたときにコールされます.
+		/// </summary>
 		void OnTriggerSnap();
 
+		/// <summary>
+		/// このメソッドは、Tweenによるスクロール座標の変化があった時にコールされます.
+		/// </summary>
 		void OnChangeTweenPosition(float pos, bool dir);
 	}
 
 	[Serializable]
 	public class ScrollSnap
 	{
-
-		public enum Alignment
-		{
-			TopOrLeft,
-			Center,
-			BottomOrRight,
-		}
-
 #region Serialize
 
 		[SerializeField] bool m_SnapOnEndDrag = false;
@@ -39,10 +39,16 @@ namespace Mobcast.Coffee
 
 #region Public
 
-		public IScrollSnap target { get; set; }
+		public IScrollSnapHandler handler { get; set;}
 
+		/// <summary>
+		/// ドラッグが終了した際、スナップをトリガします.
+		/// </summary>
 		public bool snapOnEndDrag { get{ return m_SnapOnEndDrag;} set{ m_SnapOnEndDrag = value;} }
 
+		/// <summary>
+		/// スクロール速度が値以下になったとき、Tweenを実行します.
+		/// </summary>
 		public float thresholdVelocity { get{ return m_ThresholdVelocity;} set{ m_ThresholdVelocity = value;} }
 
 		public void OnScroll()
@@ -72,23 +78,16 @@ namespace Mobcast.Coffee
 			{
 				_triggerSnap = true;
 			}
-			if (!_isDragging && _triggerSnap && Mathf.Abs(target.scrollRect.vertical ? target.scrollRect.velocity.x : target.scrollRect.velocity.y) <= thresholdVelocity)
+			if (!_isDragging && _triggerSnap && Mathf.Abs(handler.scrollRect.vertical ? handler.scrollRect.velocity.x : handler.scrollRect.velocity.y) <= thresholdVelocity)
 			{
-				target.OnTriggerSnap();
+				handler.OnTriggerSnap();
 			}
 		}
 
-		public void StartScrollTween(Method tweenType, float time, float startValue, float endValue)
+		public void StartScrollTween(Tweening.TweenMethod tweenType, float time, float startValue, float endValue)
 		{
 			StopScrollTween();
-			_coTweening = target.scrollRect.StartCoroutine(CoScrollTweening(tweenType, time, startValue, endValue));
-
-//			// Tweenが不要な場合、即終了します.
-//			if (tweenType == Method.immediate || time <= 0)
-//			{
-//				target.OnChangeTweenPosition(endValue, 0 < (endValue - startValue));
-//			}
-//			else
+			_coTweening = handler.scrollRect.StartCoroutine(CoScrollTweening(tweenType, time, startValue, endValue));
 		}
 
 #endregion Public
@@ -109,30 +108,29 @@ namespace Mobcast.Coffee
 			_mouseScrollCount = 0;
 			if (_coTweening != null)
 			{
-				target.scrollRect.StopCoroutine(_coTweening);
+				handler.scrollRect.StopCoroutine(_coTweening);
 				_coTweening = null;
-				target.scrollRect.inertia = _inertia;
-				target.scrollRect.movementType = _movementType;
+				handler.scrollRect.inertia = _inertia;
+				handler.scrollRect.movementType = _movementType;
 			}
 		}
 
 		/// <summary>
 		/// Tweenコルーチン.
 		/// </summary>
-		IEnumerator CoScrollTweening(Method tweenType, float time, float startValue, float endValue)
+		IEnumerator CoScrollTweening(Tweening.TweenMethod tweenType, float time, float startValue, float endValue)
 		{
 			// Tween中はScrollRect自体の動作(inertia/movementType)を制限します.
-			var scroll = target.scrollRect;
-			scroll.velocity = Vector2.zero;
-			_inertia = scroll.inertia;
-			_movementType = scroll.movementType;
-			scroll.inertia = false;
-			scroll.movementType = ScrollRect.MovementType.Unrestricted;
+			handler.scrollRect.velocity = Vector2.zero;
+			_inertia = handler.scrollRect.inertia;
+			_movementType = handler.scrollRect.movementType;
+			handler.scrollRect.inertia = false;
+			handler.scrollRect.movementType = ScrollRect.MovementType.Unrestricted;
 			bool positive = 0 < (endValue - startValue);
 
-			if (tweenType == Method.immediate || time <= 0)
+			if (tweenType == Tweening.TweenMethod.immediate || time <= 0)
 			{
-				target.OnChangeTweenPosition(endValue, positive);
+				handler.OnChangeTweenPosition(endValue, positive);
 				yield return null;
 			}
 			else
@@ -141,14 +139,14 @@ namespace Mobcast.Coffee
 				float unscaleTimer = 0;
 				while (unscaleTimer < time)
 				{
-					target.OnChangeTweenPosition(Tweening.GetTweenValue(tweenType, startValue, endValue, unscaleTimer / time), positive);
+					handler.OnChangeTweenPosition(Tweening.GetTweenValue(tweenType, startValue, endValue, unscaleTimer / time), positive);
 					unscaleTimer += Time.unscaledDeltaTime;
 					yield return null;
 				}
 			}
 
 			// Tweenを停止します.
-			target.OnChangeTweenPosition(endValue, positive);
+			handler.OnChangeTweenPosition(endValue, positive);
 			StopScrollTween();
 			yield break;
 		}

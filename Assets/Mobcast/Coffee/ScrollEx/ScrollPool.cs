@@ -6,48 +6,73 @@ using System.Collections.Generic;
 
 namespace Mobcast.Coffee
 {
-	public interface IScrollPool
+	/// <summary>
+	/// セルビュープールインターフェース.
+	/// </summary>
+	public interface IScrollCellViewPool
 	{
+		/// <summary>
+		/// セルビューをプールから取得または新規作成します.
+		/// </summary>
 		ScrollCellView RentCellView(ScrollCellView template);
+
+		/// <summary>
+		/// セルビューをプールに返却します.
+		/// </summary>
 		void ReturnCellView(ScrollCellView obj);
 	}
 
-//	public class ScrollPool : IScrollPool
-//	{
-//		readonly Dictionary<int, Stack<ScrollCellView>> pool = new Dictionary<int, Stack<ScrollCellView>>();
-//
-//		public Transform parent { get; set;}
-//
-//		public ScrollCellView Rent(ScrollCellView template)
-//		{
-//			var id = template.GetInstanceID();
-//			Stack<ScrollCellView> stack;
-//			if (pool.TryGetValue(id, out stack) && 0 < stack.Count)
-//				return stack.Pop();
-//
-//			var cellView = Object.Instantiate(template);
-//			cellView.templateId = id;
-//			cellView.transform.SetParent(parent, false);
-//			cellView.transform.localPosition = Vector3.zero;
-//			cellView.transform.localRotation = Quaternion.identity;
-//			cellView.transform.localScale = Vector3.zero;
-//			return cellView;
-//		}
-//
-//
-//		public void Return(ScrollCellView obj)
-//		{
-//			int id = obj.templateId;
-//			Stack<ScrollCellView> stack;
-//			if (pool.TryGetValue(id, out stack))
-//			{
-//				if (!stack.Contains(obj))
-//					stack.Push(obj);
-//				return;
-//			}
-//
-//			stack = new Stack<ScrollCellView>(){obj};
-//			pool.Add(id, stack);
-//		}
-//	}
+	public class ScrollCellViewPool : IScrollCellViewPool
+	{
+		public ScrollCellViewPool(Transform root)
+		{
+			_root = root;
+		}
+
+		Transform _root;
+
+		readonly Dictionary<int, Stack<ScrollCellView>> _pool = new Dictionary<int, Stack<ScrollCellView>>();
+
+		/// <summary>
+		/// セルビューをプールから取得または新規作成します.
+		/// </summary>
+		public ScrollCellView RentCellView(ScrollCellView template)
+		{
+			var id = template.GetInstanceID();
+			Stack<ScrollCellView> stack;
+			if (_pool.TryGetValue(id, out stack) && 0 < stack.Count)
+				return stack.Pop();
+
+			var cellView = GameObject.Instantiate(template);
+			cellView.templateId = id;
+			cellView.transform.SetParent(_root, false);
+			cellView.transform.localPosition = Vector3.zero;
+			cellView.transform.localRotation = Quaternion.identity;
+			cellView.transform.localScale = Vector3.zero;
+			return cellView;
+		}
+
+		/// <summary>
+		/// セルビューをプールに返却します.
+		/// </summary>
+		public void ReturnCellView(ScrollCellView obj)
+		{
+			int id = obj.templateId;
+			Stack<ScrollCellView> stack;
+			if (!_pool.TryGetValue(id, out stack))
+			{
+				stack = new Stack<ScrollCellView>();
+				_pool.Add(id, stack);
+			}
+
+			if (!stack.Contains(obj))
+			{
+				obj.transform.SetParent(_root, false);
+				obj.transform.localPosition = Vector3.zero;
+				obj.transform.localRotation = Quaternion.identity;
+				obj.transform.localScale = Vector3.zero;
+				stack.Push(obj);
+			}
+		}
+	}
 }
