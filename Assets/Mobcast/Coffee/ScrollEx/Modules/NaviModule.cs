@@ -7,19 +7,6 @@ using UnityEngine.UI;
 
 namespace Mobcast.Coffee.UI.ScrollModule
 {
-//	/// <summary>
-//	/// スクロールビューコントローラインターフェース.
-//	/// </summary>
-//	public interface IScrollNavigation : IBeginDragHandler, IEndDragHandler
-//	{
-//		ScrollRect scrollRect { get;}
-//
-//		int activeIndex { get;}
-//
-//		bool CanJumpTo(int index);
-//		void JumpTo(int index);
-//	}
-
 	/// <summary>
 	/// 前後のセルビューにジャンプするためのモジュールです.
 	/// オートローテーションを有効にすると、自動的にスクロールが進行します.
@@ -33,10 +20,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		[SerializeField][Range(20,500)]  float m_SwipeThreshold = 200;
 		[SerializeField] Button m_PreviousButton;
 		[SerializeField] Button m_NextButton;
-
-		[SerializeField] bool m_NextAutomatically = false;
-		[SerializeField][Range(3f,10f)] float m_Delay = 6;
-		[SerializeField][Range(1f,5f)] float m_Interval = 2;
 #endregion Serialize
 
 #region Public
@@ -48,22 +31,14 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		public Button previousButton { get{ return m_PreviousButton;} set{ m_PreviousButton = value; _changedButton = true;} }
 		public Button nextButton { get{ return m_NextButton;} set{ m_NextButton = value; _changedButton = true;} }
 
-		public bool autoJumpToNext { get{ return m_NextAutomatically;} set{ m_NextAutomatically = value;} }
-		public float interval { get{ return m_Interval;} set{ m_Interval = value;} }
-		public float delay { get{ return m_Delay;} set{ m_Delay = value;} }
-
-
 		public void OnBeginDrag(PointerEventData eventData)
 		{
-			_isDragging = true;
 			_dragStartIndex = handler.activeIndex;
 			_dragStartPosition = handler.scrollRect.vertical ? eventData.position.y : eventData.position.x;
 		}
 
 		public void OnEndDrag(PointerEventData eventData)
 		{
-			_autoJumpTimer = delay;
-			_isDragging = false;
 			if (!m_JumpOnSwipe)
 				return;
 
@@ -76,11 +51,11 @@ namespace Mobcast.Coffee.UI.ScrollModule
 						float diff = (scroll.vertical ? eventData.position.y : eventData.position.x) - _dragStartPosition;
 			if (m_SwipeThreshold < diff&& handler.CanJumpTo(index + 1))
 			{
-				JumpToNext();
+				_JumpToNext();
 			}
 			else if (diff < -m_SwipeThreshold && handler.CanJumpTo(index - 1))
 			{
-				JumpToPrevious();
+				_JumpToPrevious();
 			}
 		}
 
@@ -92,13 +67,13 @@ namespace Mobcast.Coffee.UI.ScrollModule
 				_changedButton = false;
 				if (previousButton)
 				{
-					previousButton.onClick.RemoveListener(JumpToPrevious);
-					previousButton.onClick.AddListener(JumpToPrevious);
+					previousButton.onClick.RemoveListener(_JumpToPrevious);
+					previousButton.onClick.AddListener(_JumpToPrevious);
 				}
 				if (nextButton)
 				{
-					nextButton.onClick.RemoveListener(JumpToNext);
-					nextButton.onClick.AddListener(JumpToNext);
+					nextButton.onClick.RemoveListener(_JumpToNext);
+					nextButton.onClick.AddListener(_JumpToNext);
 				}
 			}
 
@@ -112,34 +87,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			{
 				nextButton.interactable = handler.CanJumpTo(index + 1);
 			}
-
-			// 自動送り
-			if (autoJumpToNext && _coAutoJump == null)
-			{
-				// 他のコントロールでスクロールした場合、再ディレイさせます.
-				if (_lastPosition != handler.scrollPosition || _autoJumpTimer <= 0)
-				{
-					_autoJumpTimer = Mathf.Max(_autoJumpTimer, delay);
-				}
-				// 非ドラッグ状態で、オートローテーションタイマが有効な場合、タイマを進め、トリガします.
-				else if (!_isDragging && 0 < _autoJumpTimer && (_autoJumpTimer -= Time.unscaledDeltaTime) <= 0)
-				{
-					_coAutoJump = handler.StartCoroutine(CoAutoJump());
-				}
-			}
-			_lastPosition = handler.scrollPosition;
-		}
-
-		IEnumerator CoAutoJump()
-		{
-			_autoJumpTimer = interval;
-			if (handler.loop || handler.CanJumpTo(handler.activeIndex + 1))
-				JumpToNext();
-			else
-				handler.JumpTo(0);
-			
-			yield return new WaitForSeconds(handler.tweenDuration + 0.1f);
-			_coAutoJump = null;
 		}
 
 
@@ -150,17 +97,13 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		int _dragStartIndex;
 		float _dragStartPosition;
 		bool _changedButton = true;
-		Coroutine _coAutoJump;
-		float _autoJumpTimer = 0;
-		bool _isDragging;
-		float _lastPosition = 0;
 
-		void JumpToPrevious()
+		void _JumpToPrevious()
 		{
 			handler.JumpTo(handler.activeIndex - 1);
 		}
 
-		void JumpToNext()
+		void _JumpToNext()
 		{
 			handler.JumpTo(handler.activeIndex + 1);
 		}

@@ -38,7 +38,7 @@ namespace Mobcast.Coffee.UI
 			_scroll = scroll;
 		}
 
-		ScrollRect _scroll;
+		readonly ScrollRect _scroll;
 
 		/// <summary>
 		/// コントローラーがもつ、データの要素数を取得します.

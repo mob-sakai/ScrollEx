@@ -8,27 +8,6 @@ using System.Collections.Generic;
 
 namespace Mobcast.Coffee.UI.ScrollModule
 {
-
-//	/// <summary>
-//	/// スクロールインジケータハンドラー.
-//	/// </summary>
-//	public interface IIndicatorHandler
-//	{
-//		int activeIndex { get; }
-//
-//		void JumpTo(int index);
-//
-//		/// <summary>
-//		/// 最大ページ数を取得します.
-//		/// </summary>
-//		int GetPageCount();
-//
-//		/// <summary>
-//		/// 現在のページ数を取得します.
-//		/// </summary>
-//		int GetPageIndex();
-//	}
-
 	/// <summary>
 	/// 現在のインデックスをインジケータ表示するモジュールです.
 	/// インジケータをクリックすると対象のインデックスに移動できます.
@@ -65,6 +44,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			if (!m_LayoutGroup || (_count == count && _index == index))
 				return;
 
+			// テンプレート自体は非アクティブに
 			if (m_Template.gameObject.activeSelf)
 			{
 				m_Template.gameObject.SetActive(false);

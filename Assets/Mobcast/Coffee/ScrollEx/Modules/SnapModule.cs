@@ -9,24 +9,6 @@ using System.Collections.Generic;
 
 namespace Mobcast.Coffee.UI.ScrollModule
 {
-//	/// <summary>
-//	/// スクロールスナップハンドラー.
-//	/// </summary>
-//	public interface IScrollSnapperHandler : IScrollHandler, IBeginDragHandler, IEndDragHandler
-//	{
-//		ScrollRect scrollRect { get;}
-//
-//		/// <summary>
-//		/// このメソッドは、スナップがトリガされたときにコールされます.
-//		/// </summary>
-//		void OnTriggerSnap();
-//
-//		/// <summary>
-//		/// このメソッドは、Tweenによるスクロール座標の変化があった時にコールされます.
-//		/// </summary>
-//		void OnChangeTweenPosition(float pos, bool dir);
-//	}
-
 	/// <summary>
 	/// スクロールスナッパー.
 	/// スクロール領域をオブジェクトにスナップさせるモジュールです.
@@ -38,7 +20,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 #region Serialize
 
 		[SerializeField] bool m_SnapOnEndDrag = false;
-		[SerializeField] float m_ThresholdVelocity = 200;
+		[SerializeField][Range(10,1000)] float m_VelocityThreshold = 200;
 
 #endregion Serialize
 
@@ -54,19 +36,19 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		/// <summary>
 		/// スクロール速度が値以下になったとき、Tweenを実行します.
 		/// </summary>
-		public float thresholdVelocity { get{ return m_ThresholdVelocity;} set{ m_ThresholdVelocity = value;} }
+		public float velocityThreshold { get{ return m_VelocityThreshold;} set{ m_VelocityThreshold = value;} }
 
 		public event Action onEndNextTween;
 
 		public void OnScroll(PointerEventData eventData)
 		{
-			StopScrollTween();
+			_StopScrollTween();
 			_mouseScrollCount = 10;
 		}
 
 		public void OnBeginDrag(PointerEventData eventData)
 		{
-			StopScrollTween();
+			_StopScrollTween();
 			_isDragging = true;
 		}
 
@@ -93,10 +75,10 @@ namespace Mobcast.Coffee.UI.ScrollModule
 				float v = velocity;
 				float average = (v + _oldVelocity) / 2;
 
-				if (Mathf.Abs(average) <= thresholdVelocity)
+				if (Mathf.Abs(average) <= velocityThreshold)
 				{
 					_triggerSnap = false;
-					handler.OnTriggerSnap();
+					handler.JumpTo(handler.activeIndex);
 				}
 				else if (handler.scrollRect.inertia && v == 0f)
 				{
@@ -111,8 +93,8 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 		public void StartScrollTween(Tweening.TweenMethod tweenType, float time, float startValue, float endValue)
 		{
-			StopScrollTween();
-			_coTweening = handler.scrollRect.StartCoroutine(CoScrollTweening(tweenType, time, startValue, endValue));
+			_StopScrollTween();
+			_coTweening = handler.scrollRect.StartCoroutine(_CoScrollTweening(tweenType, time, startValue, endValue));
 		}
 
 #endregion Public
@@ -128,7 +110,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		ScrollRect.MovementType _movementType;
 		float _oldVelocity = 0;
 
-		void StopScrollTween()
+		void _StopScrollTween()
 		{
 			_triggerSnap = false;
 			_mouseScrollCount = 0;
@@ -149,7 +131,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		/// <summary>
 		/// Tweenコルーチン.
 		/// </summary>
-		IEnumerator CoScrollTweening(Tweening.TweenMethod tweenType, float time, float startValue, float endValue)
+		IEnumerator _CoScrollTweening(Tweening.TweenMethod tweenType, float time, float startValue, float endValue)
 		{
 			// Tween中はScrollRect自体の動作(inertia/movementType)を制限します.
 			handler.scrollRect.velocity = Vector2.zero;
@@ -178,7 +160,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 			// Tweenを停止します.
 			handler.OnChangeTweenPosition(endValue, positive);
-			StopScrollTween();
+			_StopScrollTween();
 			yield break;
 		}
 #endregion Private

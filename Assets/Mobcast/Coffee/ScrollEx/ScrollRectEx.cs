@@ -34,6 +34,8 @@ namespace Mobcast.Coffee.UI
 
 		public NaviModule naviModule { get{ return m_NaviModule;} }
 
+		public AutoRotationModule autoRotationModule { get{ return m_AutoRotationModule;} }
+
 		public float tweenDuration { get { return m_TweenDuration; } set { m_TweenDuration = value; } }
 
 		public TweenMethod tweenMethod { get { return m_TweenMethod; } set { m_TweenMethod = value; } }
@@ -45,6 +47,8 @@ namespace Mobcast.Coffee.UI
 		[SerializeField] SnapModule m_SnapModule;
 
 		[SerializeField] NaviModule m_NaviModule;
+		[SerializeField] AutoRotationModule m_AutoRotationModule;
+
 
 
 		[SerializeField] Alignment m_Alignment = Alignment.Center;
@@ -901,6 +905,7 @@ namespace Mobcast.Coffee.UI
 			snapModule.handler = this;
 			indicatorModule.handler = this;
 			naviModule.handler = this;
+			autoRotationModule.handler = this;
 
 			// デフォルトのセルビュープールを生成.
 			if (scrollPool == null)
@@ -950,6 +955,7 @@ namespace Mobcast.Coffee.UI
 			indicatorModule.Update();
 			snapModule.Update();
 			naviModule.Update();
+			autoRotationModule.Update();
 
 			// if the scroll rect size has changed and looping is on,
 			// or the loop setting has changed, then we need to resize
@@ -971,7 +977,6 @@ namespace Mobcast.Coffee.UI
 
 
 
-#region IScrollSnap implementation
 		/// <summary>
 		/// Called by the EventSystem when a Scroll event occurs.
 		/// </summary>
@@ -987,6 +992,8 @@ namespace Mobcast.Coffee.UI
 		{
 			naviModule.OnBeginDrag(eventData);
 			snapModule.OnBeginDrag(eventData);
+			autoRotationModule.OnBeginDrag(eventData);
+
 		}
 
 		/// <summary>
@@ -996,11 +1003,7 @@ namespace Mobcast.Coffee.UI
 		{
 			naviModule.OnEndDrag(eventData);
 			snapModule.OnEndDrag(eventData);
-		}
-
-		public void OnTriggerSnap()
-		{
-			JumpTo(activeIndex);
+			autoRotationModule.OnEndDrag(eventData);
 		}
 
 		public void OnChangeTweenPosition(float value, bool positive)
@@ -1015,9 +1018,6 @@ namespace Mobcast.Coffee.UI
 			}
 			scrollPosition = value;
 		}
-#endregion IScrollSnap implementation
-
-#region IScrollPagerHandler implementation
 
 		/// <summary>
 		/// 最大ページ数を取得します.
@@ -1035,7 +1035,6 @@ namespace Mobcast.Coffee.UI
 			return activeIndex;
 		}
 
-#endregion IScrollPagerHandler implementation
 
 
 

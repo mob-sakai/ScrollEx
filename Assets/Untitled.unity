@@ -3526,22 +3526,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc2555e673ebd4309aa9fb83395a102f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ScrollPager:
-    m_Template: {fileID: 897558681}
-    m_Limit: 40
-    m_LayoutGroup: {fileID: 205032093}
-  m_ScrollSnap:
+  m_IndicatorModule:
+    m_LayoutGroup: {fileID: 0}
+    m_Template: {fileID: 0}
+    m_Limit: 10
+  m_SnapModule:
     m_SnapOnEndDrag: 1
     m_ThresholdVelocity: 200
-  m_ScrollNavigator:
+  m_NaviModule:
     m_JumpOnSwipe: 1
-    m_SwipeThreshold: 200
-    m_PreviousButton: {fileID: 21658674}
-    m_NextButton: {fileID: 18708587}
+    m_SwipeThreshold: 20
+    m_PreviousButton: {fileID: 18708587}
+    m_NextButton: {fileID: 21658674}
+    m_NextAutomatically: 0
+    m_Delay: 2
+    m_Interval: 2
   m_Alignment: 1
   m_TweenMethod: 16
   m_TweenDuration: 0.5
-  m_Loop: 1
+  m_Loop: 0
 --- !u!114 &1665869768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3693,22 +3696,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dc2555e673ebd4309aa9fb83395a102f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ScrollPager:
-    m_Template: {fileID: 818501874}
-    m_Limit: 40
-    m_LayoutGroup: {fileID: 321767936}
-  m_ScrollSnap:
+  m_IndicatorModule:
+    m_LayoutGroup: {fileID: 0}
+    m_Template: {fileID: 0}
+    m_Limit: 10
+  m_SnapModule:
     m_SnapOnEndDrag: 1
     m_ThresholdVelocity: 200
-  m_ScrollNavigator:
-    m_JumpOnSwipe: 1
-    m_SwipeThreshold: 50
+  m_NaviModule:
+    m_JumpOnSwipe: 0
+    m_SwipeThreshold: 200
     m_PreviousButton: {fileID: 921708739}
     m_NextButton: {fileID: 1361812521}
+    m_NextAutomatically: 1
+    m_Delay: 5
+    m_Interval: 1
   m_Alignment: 1
   m_TweenMethod: 16
   m_TweenDuration: 0.5
-  m_Loop: 1
+  m_Loop: 0
 --- !u!114 &1825456808
 MonoBehaviour:
   m_ObjectHideFlags: 0

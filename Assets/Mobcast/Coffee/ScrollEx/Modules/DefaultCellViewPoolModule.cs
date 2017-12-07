@@ -33,8 +33,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			_root = root;
 		}
 
-		Transform _root;
-
+		readonly Transform _root;
 		readonly Dictionary<int, Stack<ScrollCellView>> _pool = new Dictionary<int, Stack<ScrollCellView>>();
 
 		/// <summary>
@@ -69,14 +68,13 @@ namespace Mobcast.Coffee.UI.ScrollModule
 				_pool.Add(id, stack);
 			}
 
+			obj.transform.SetParent(_root, false);
+			obj.transform.localPosition = Vector3.zero;
+			obj.transform.localRotation = Quaternion.identity;
+			obj.transform.localScale = Vector3.zero;
+
 			if (!stack.Contains(obj))
-			{
-				obj.transform.SetParent(_root, false);
-				obj.transform.localPosition = Vector3.zero;
-				obj.transform.localRotation = Quaternion.identity;
-				obj.transform.localScale = Vector3.zero;
 				stack.Push(obj);
-			}
 		}
 	}
 }
