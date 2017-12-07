@@ -21,5 +21,7 @@ namespace Mobcast.Coffee
 
 		public abstract void OnBeforePool();
 
+		public abstract void OnPositionChanged(float normalizedPosition);
+
 	}
 }

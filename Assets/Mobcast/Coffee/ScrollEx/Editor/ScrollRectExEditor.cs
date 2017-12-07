@@ -1,205 +1,160 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using UnityEditor.UI;
+using System.Linq;
 using System.Collections;
 using UnityEngine.UI;
 using Axis = UnityEngine.RectTransform.Axis;
 
 namespace Mobcast.Coffee.UI
 {
+	[CanEditMultipleObjects]
 	[CustomEditor(typeof(ScrollRectEx), true)]
 	public class ScrollRectExEditor : Editor
 	{
-//		void _FixLayout(ScrollRectEx current)
-//		{
-//			bool vertical = current.scrollRect.vertical;
-//			var type = current.scrollRect.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
-//			LayoutGroup layout = current.layoutGroup ?? current.content.GetComponent<LayoutGroup>();
-//			if (!layout)
-//				current.content.gameObject.AddComponent(type);
-//			else
-//				ComponentConverter.ConvertTo(layout, type);
-//
-//			current.scrollRect.vertical = vertical;
-//			current.scrollRect.horizontal = !vertical;
-//		}
-//
-//
-//
-//		bool _oldVertical;
-//		bool _oldHorizontal;
+		static readonly GUIContent s_ContentSnap = new GUIContent("Snap / Smoothing");
+		static readonly GUIContent s_ContentNavi = new GUIContent("Navigation");
+		static readonly GUIContent s_ContentIndicator = new GUIContent("Indicator");
+		static readonly GUIContent s_ContentAutoRotation = new GUIContent("AutoRotation");
+		static readonly GUIContent s_ContentLayout = new GUIContent("Layout");
+		static readonly GUIContent s_ContentLayoutGroup = new GUIContent("Content Layout Group");
+		static readonly GUIContent s_ContentDirection = new GUIContent("Direction");
+		static readonly GUIContent[] s_ContentDirectionPopup = { new GUIContent("Horizontal"), new GUIContent("Vertical") };
 
+		void DrawLayoutDirection()
+		{
+			var scrolls = targets
+				.OfType<ScrollRectEx>()
+				.Select(x => x.scrollRect)
+				.Where(x => !object.ReferenceEquals(x, null))
+				.ToArray();
 
-//		void OnEnable()
-//		{
-//			ScrollRectEx current = target as ScrollRectEx;
-//			_oldHorizontal = current.scrollRect.horizontal;
-//		}
+			if (0 < scrolls.Length)
+			{
+				var so = new SerializedObject(scrolls);
+				var spVertical = so.FindProperty("m_Vertical");
+				var spHorizontal = so.FindProperty("m_Horizontal");
+				var id = spVertical.boolValue ? 1 : 0;
+				EditorGUI.showMixedValue = spVertical.hasMultipleDifferentValues;
+
+				EditorGUI.BeginChangeCheck();
+				id = EditorGUILayout.Popup(s_ContentDirection, id, s_ContentDirectionPopup);
+				if (EditorGUI.EndChangeCheck())
+				{
+					spVertical.boolValue = id == 1;
+					spHorizontal.boolValue = id == 0;
+					so.ApplyModifiedProperties();
+				}
+//				EditorGUI.showMixedValue = false;
+			}
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Loop"));
+		}
+
+		void DrawLayoutPaddingAndSpace()
+		{
+			var layouts = targets
+				.OfType<ScrollRectEx>()
+				.Select(x => x.layoutGroup)
+				.Where(x => !object.ReferenceEquals(x, null))
+				.ToArray();
+			
+			if (0 < layouts.Length)
+			{
+				EditorGUI.showMixedValue = 1 < layouts.Length;
+				EditorGUILayout.ObjectField(s_ContentLayoutGroup, (target as ScrollRectEx).layoutGroup, typeof(HorizontalOrVerticalLayoutGroup), true);
+
+				var so = new SerializedObject(layouts);
+				var spPadding = so.FindProperty("m_Padding");
+//				spPadding.isExpanded = true;
+
+				EditorGUI.indentLevel++;
+				EditorGUILayout.PropertyField(spPadding, true);
+				EditorGUILayout.PropertyField(so.FindProperty("m_Spacing"));
+				EditorGUI.indentLevel--;
+				so.ApplyModifiedProperties();
+			}
+		}
 
 		public override void OnInspectorGUI()
 		{
-			ScrollRectEx current = target as ScrollRectEx;
-
-//			if (current.scrollRectXXX.vertical != (current.layoutGroupXXX is VerticalLayoutGroup))
-//			{
-//				EditorApplication.delayCall += () =>
-//				{
-//					var type = current.scrollRectXXX.vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
-//					var l = current.contentXXX.GetComponent<LayoutGroup>();
-//					if (l)
-//						ComponentConverter.ConvertTo(l, type);
-//					else
-//						current.contentXXX.gameObject.AddComponent(type);
-//				};
-//			}
-
-//			var layout = current.layoutGroupXXX;
-
-			base.OnInspectorGUI();
-
 			serializedObject.Update();
 
-//			ScrollRectEx current = target as ScrollRectEx;
+//			GUILayout.Space(10);
+//			EditorGUILayout.LabelField(s_ContentLayout, EditorStyles.boldLabel);
+			DrawLayoutDirection();
+			DrawLayoutPaddingAndSpace();
 
-//			if(!current._layoutGroup || )
+			SerializedProperty spModule;
 
-			if (current.layoutGroup)
+			GUILayout.Space(10);
+			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
 			{
-				var so = new SerializedObject(current.layoutGroup);
-				so.Update();
-				EditorGUILayout.LabelField("Layout", EditorStyles.boldLabel);
-				EditorGUILayout.PropertyField(so.FindProperty("m_Padding"), true);
-				EditorGUILayout.PropertyField(so.FindProperty("m_Spacing"));
-				so.ApplyModifiedProperties();
-			}
+				EditorGUILayout.LabelField(s_ContentSnap, EditorStyles.boldLabel);
+				spModule = serializedObject.FindProperty("m_SnapModule");
+				var spSnapOnEndDrag = spModule.FindPropertyRelative("m_SnapOnEndDrag");
 
-
-			EditorGUILayout.LabelField("Snap / Smoothing", EditorStyles.boldLabel);
-			var spSnapModule = serializedObject.FindProperty("m_SnapModule");
-			var spSnapOnEndDrag = spSnapModule.FindPropertyRelative("m_SnapOnEndDrag");
-			EditorGUILayout.PropertyField(spSnapOnEndDrag);
-			using (new EditorGUI.DisabledGroupScope(!spSnapOnEndDrag.boolValue))
-			{
-				EditorGUILayout.PropertyField(spSnapModule.FindPropertyRelative("m_VelocityThreshold"));
-			}
-			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_TweenMethod"));
-			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_TweenDuration"));
-
-
-
-			EditorGUILayout.LabelField("Navigation", EditorStyles.boldLabel);
-			var spNaviModule = serializedObject.FindProperty("m_NaviModule");
-			var spJumpOnSwipe = spNaviModule.FindPropertyRelative("m_JumpOnSwipe");
-			EditorGUILayout.PropertyField(spJumpOnSwipe);
-			using (new EditorGUI.DisabledGroupScope(!spJumpOnSwipe.boolValue))
-			{
-				EditorGUILayout.PropertyField(spNaviModule.FindPropertyRelative("m_SwipeThreshold"));
-			}
-			EditorGUILayout.PropertyField(spNaviModule.FindPropertyRelative("m_PreviousButton"));
-			EditorGUILayout.PropertyField(spNaviModule.FindPropertyRelative("m_NextButton"));
-
-
-			EditorGUILayout.LabelField("AutoRotation", EditorStyles.boldLabel);
-			var spAutoRotationModule = serializedObject.FindProperty("m_AutoRotationModule");
-			var spAutoJumpToNext = spAutoRotationModule.FindPropertyRelative("m_AutoJumpToNext");
-			EditorGUILayout.PropertyField(spAutoJumpToNext);
-			using (new EditorGUI.DisabledGroupScope(!spAutoJumpToNext.boolValue))
-			{
-				EditorGUILayout.PropertyField(spAutoRotationModule.FindPropertyRelative("m_Delay"));
-				EditorGUILayout.PropertyField(spAutoRotationModule.FindPropertyRelative("m_Interval"));
-			}
-
-//			if(current.scrollRect.horizontal && !_oldHorizontal)
-//				current.scrollRect.vertical = false;
-//			else if(!current.scrollRect.horizontal && _oldHorizontal)
-//				current.scrollRect.vertical = true;
-//			
-//			current.scrollRect.horizontal = !current.scrollRect.vertical;
-////
-//			_oldHorizontal = current.scrollRect.horizontal;
-//			EditorApplication.delayCall +=() =>_FixLayout(current);
-
-			/*
-			EditorGUI.BeginChangeCheck();
-			var spDirection = serializedObject.FindProperty("m_Direction");
-			EditorGUILayout.PropertyField(spDirection);
-			if (EditorGUI.EndChangeCheck())
-			{
-				bool vertical = (Axis)spDirection.intValue == Axis.Vertical;
-				var type = vertical ? typeof(VerticalLayoutGroup) : typeof(HorizontalLayoutGroup);
-				current.scrollRect.vertical = vertical;
-				current.scrollRect.horizontal = !vertical;
-
-				// インジケータのレイアウトグループを修正.
-				if (current.m_ScrollIndicator)
+				EditorGUILayout.PropertyField(spSnapOnEndDrag);
+				using (new EditorGUI.DisabledGroupScope(!spSnapOnEndDrag.boolValue))
 				{
-					if (!current.m_ScrollIndicator.layoutGroup)
-					{
-						current.m_ScrollIndicator.gameObject.AddComponent(type);
-					}
-					ComponentConverter.ConvertTo(current.m_ScrollIndicator.layoutGroup, type);
-
-
-
-
-//					var lg = new GameObject("Pager", typeof(RectTransform), type).GetComponent(type) as HorizontalOrVerticalLayoutGroup;
-//					lg.transform.SetParent(current.transform);
-//					current.m_ScrollIndicator.layoutGroup = lg;
-//					lg.childAlignment = TextAnchor.MiddleCenter;
-//					lg.childForceExpandHeight = false;
-//					lg.childForceExpandWidth = false;
-//
-//
-//					EditorApplication.ExecuteMenuItem("GameObject/UI/Toggle");
-//					var toggle = Selection.activeGameObject.GetComponent<Toggle>();
-//					var le = toggle.gameObject.AddComponent<LayoutElement>();
-//					le.preferredHeight = 20;
-//					le.preferredWidth = 20;
-//					toggle.transform.SetParent(lg.transform);
-//					current.m_ScrollIndicator.m_PagerToggle = toggle;
-//					EditorApplication.delayCall += () =>
-//					{
-//						var t = toggle.GetComponentInChildren<Text>();
-//						if (t)
-//						{
-//							Object.DestroyImmediate(t.gameObject);
-//						}
-//					};
-//					
+					EditorGUI.indentLevel++;
+					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_VelocityThreshold"));
+					EditorGUI.indentLevel--;
 				}
-//
-//
-//				ComponentConverter.ConvertTo(current.layoutGroup, type);
-//				ComponentConverter.ConvertTo(current.pagerLayoutGroup, type);
+				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Alignment"));
+				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_TweenMethod"));
+				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_TweenDuration"));
 			}
-			*/
+
+//			GUILayout.Space(10);
+			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			{
+				EditorGUILayout.LabelField(s_ContentNavi, EditorStyles.boldLabel);
+				spModule = serializedObject.FindProperty("m_NaviModule");
+				var spJumpOnSwipe = spModule.FindPropertyRelative("m_JumpOnSwipe");
+				EditorGUILayout.PropertyField(spJumpOnSwipe);
+				using (new EditorGUI.DisabledGroupScope(!spJumpOnSwipe.boolValue))
+				{
+					EditorGUI.indentLevel++;
+					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_SwipeThreshold"));
+					EditorGUI.indentLevel--;
+				}
+				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_PreviousButton"));
+				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_NextButton"));
+			}
+
+			//GUILayout.Space(10);
+			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			{
+				EditorGUILayout.LabelField(s_ContentAutoRotation, EditorStyles.boldLabel);
+				spModule = serializedObject.FindProperty("m_AutoRotationModule");
+				var spAutoJumpToNext = spModule.FindPropertyRelative("m_AutoJumpToNext");
+				EditorGUILayout.PropertyField(spAutoJumpToNext);
+				using (new EditorGUI.DisabledGroupScope(!spAutoJumpToNext.boolValue))
+				{
+					EditorGUI.indentLevel++;
+					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_Delay"));
+					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_Interval"));
+					EditorGUI.indentLevel--;
+				}
+			}
+
+//			GUILayout.Space(10);
+			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			{
+				EditorGUILayout.LabelField(s_ContentIndicator, EditorStyles.boldLabel);
+				spModule = serializedObject.FindProperty("m_IndicatorModule");
+				var spTemplate = spModule.FindPropertyRelative("m_Template");
+				EditorGUILayout.PropertyField(spTemplate);
+				using (new EditorGUI.DisabledGroupScope(!spTemplate.objectReferenceValue))
+				{
+					EditorGUI.indentLevel++;
+					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_LayoutGroup"));
+					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_Limit"));
+					EditorGUI.indentLevel--;
+				}
+			}
+
 			serializedObject.ApplyModifiedProperties();
-
-
-
-//			if (current.scrollRectXXX.vertical != (current.layoutGroupXXX is VerticalLayoutGroup))
-//			{
-//				EditorGUILayout.HelpBox("layout", MessageType.Warning);
-//				if (GUILayout.Button("Fix"))
-//				{
-//					var l = current.contentXXX.GetComponent<LayoutGroup>();
-//					if (l)
-//					{
-//						if (current.scrollRectXXX.vertical)
-//							ComponentConverter.ConvertTo<VerticalLayoutGroup>(l);
-//						else
-//							ComponentConverter.ConvertTo<HorizontalLayoutGroup>(l);
-//					}
-//					else
-//					{
-//						if (current.scrollRectXXX.vertical)
-//							current.contentXXX.gameObject.AddComponent<VerticalLayoutGroup>();
-//						else
-//							current.contentXXX.gameObject.AddComponent<HorizontalLayoutGroup>();
-//					}
-//				}
-//			}
-
 		}
 	}
 }

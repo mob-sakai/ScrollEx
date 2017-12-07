@@ -19,7 +19,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 		[SerializeField] LayoutGroup m_LayoutGroup;
 		[SerializeField] public Toggle m_Template = null;
-		[SerializeField] int m_Limit = 10;
+		[SerializeField] int m_Limit = 30;
 
 #endregion Serialize
 
@@ -35,7 +35,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 		public void Update()
 		{
-			if (!m_LayoutGroup)
+			if (!m_LayoutGroup || !m_Template)
 				return;
 
 			// 変更なし.

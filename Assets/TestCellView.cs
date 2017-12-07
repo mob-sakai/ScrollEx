@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.UI;
 //using EnhancedUI.EnhancedScroller;
 using Mobcast.Coffee;
+using Mobcast.Coffee.UI;
+using Mobcast.Coffee.Transition;
 
 namespace EnhancedScrollerDemos.SuperSimpleDemo
 {
@@ -16,6 +18,8 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		/// A reference to the UI Text element to display the cell data
 		/// </summary>
 		public Text someTextText;
+
+		public UIAnimation anim;
 
 		/// <summary>
 		/// This function just takes the Demo data and displays it
@@ -38,6 +42,14 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 		public override void OnBeforePool()
 		{
 		}
+
+
+		public override void OnPositionChanged(float normalizedPosition)
+		{
+			// someTextText.text = string.Format("{0:P1}",normalizedPosition);
+			anim.Sample(Mathf.Clamp01(normalizedPosition));
+		}
+
 		#endregion
 	}
 }

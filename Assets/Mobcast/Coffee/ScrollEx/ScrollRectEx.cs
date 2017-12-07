@@ -80,7 +80,32 @@ namespace Mobcast.Coffee.UI
 			get
 			{
 				if (!m_LayoutGroup)
+				{
 					m_LayoutGroup = content.GetComponent<HorizontalOrVerticalLayoutGroup>();
+					if(!m_LayoutGroup)
+					{
+						var lg = content.GetComponent<LayoutGroup>();
+						if (lg)
+							GameObject.DestroyImmediate(lg);
+						if(scrollRect.vertical)
+							m_LayoutGroup = content.gameObject.AddComponent<VerticalLayoutGroup>();
+						else
+							m_LayoutGroup = content.gameObject.AddComponent<HorizontalLayoutGroup>();
+					}
+				}
+
+				if (scrollRect.vertical != (m_LayoutGroup is VerticalLayoutGroup))
+				{
+					float s = m_LayoutGroup.spacing;
+					RectOffset p = m_LayoutGroup.padding;
+					GameObject.DestroyImmediate(m_LayoutGroup);
+					if(scrollRect.vertical)
+						m_LayoutGroup = content.gameObject.AddComponent<VerticalLayoutGroup>();
+					else
+						m_LayoutGroup = content.gameObject.AddComponent<HorizontalLayoutGroup>();
+					m_LayoutGroup.spacing = s;
+					m_LayoutGroup.padding = p;
+				}
 				return m_LayoutGroup;
 			}
 		}
@@ -678,6 +703,8 @@ namespace Mobcast.Coffee.UI
 
 			// パディングサイズを調整します.
 			_AdjustPaddingSize(startIndex, endIndex);
+
+			_OnChangeActiveCellPosition();
 		}
 
 		/// <summary>
@@ -800,12 +827,36 @@ namespace Mobcast.Coffee.UI
 			// 現在見えているセルビューの範囲を取得します.
 			_CalculateCurrentActiveCellRange(out startIndex, out endIndex);
 
+
+
 			// if the index hasn't changed, ignore and return
 			if (startIndex == activeStartCellIndex && endIndex == activeEndCellIndex)
+			{
+				_OnChangeActiveCellPosition();
 				return;
+			}
 
 			// recreate the visibile cells
 			_ResetVisibleCellViews();
+		}
+
+
+		/// <summary>
+		/// 現在見えているセルビューに対し、座標変更を通知します.
+		/// </summary>
+		private void _OnChangeActiveCellPosition()
+		{
+			var pos = scrollPosition;
+			var rectSize = scrollRectSize;
+			if (rectSize <= 0)
+				return;
+
+			for (int i = 0; i < activeCellViews.Count; i++)
+			{
+				var cell = activeCellViews[i];
+				var cellPosition = GetScrollPositionFromIndex(cell.cellIndex) + controller.GetCellViewSize(cell.dataIndex) / 2;
+				cell.OnPositionChanged((cellPosition - pos) / rectSize);
+			}
 		}
 
 		/// <summary>
