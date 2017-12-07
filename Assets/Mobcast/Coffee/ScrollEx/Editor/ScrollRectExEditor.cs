@@ -16,7 +16,6 @@ namespace Mobcast.Coffee.UI
 		static readonly GUIContent s_ContentNavi = new GUIContent("Navigation");
 		static readonly GUIContent s_ContentIndicator = new GUIContent("Indicator");
 		static readonly GUIContent s_ContentAutoRotation = new GUIContent("AutoRotation");
-		static readonly GUIContent s_ContentLayout = new GUIContent("Layout");
 		static readonly GUIContent s_ContentLayoutGroup = new GUIContent("Content Layout Group");
 		static readonly GUIContent s_ContentDirection = new GUIContent("Direction");
 		static readonly GUIContent[] s_ContentDirectionPopup = { new GUIContent("Horizontal"), new GUIContent("Vertical") };

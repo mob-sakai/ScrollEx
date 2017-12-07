@@ -32,7 +32,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 	///  - What each cell size is (GetCellSize)
 	///  - What the cell at a given index should be (GetCell)
 	/// </summary>
-	public class TestScroller : MonoBehaviour, IScrollViewController
+	public class ScrollController_Demo : MonoBehaviour, IScrollViewController
 	{
 		#region IScrollViewDelegate implementation
 
@@ -48,7 +48,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 
 		public ScrollCellView GetCellView(int dataIndex)
 		{
-			TestCellView cellView = scrollView.GetCellView(cellViewPrefab) as TestCellView;
+			CellView_Demo cellView = scrollView.GetCellView(cellViewPrefab) as CellView_Demo;
 			cellView.name = "Cell " + dataIndex.ToString();
 			cellView.SetData(_data[dataIndex]);
 			return cellView;
@@ -137,49 +137,6 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 
 		#region EnhancedScroller Handlers
 
-
-		//		public override int cellCount { get { return _data.Count; } }
-
-		/// <summary>
-		/// This tells the scroller what the size of a given cell will be. Cells can be any size and do not have
-		/// to be uniform. For vertical scrollers the cell size will be the height. For horizontal scrollers the
-		/// cell size will be the width.
-		/// </summary>
-		/// <param name="scroller">The scroller requesting the cell size</param>
-		/// <param name="dataIndex">The index of the data that the scroller is requesting</param>
-		/// <returns>The size of the cell</returns>
-		//		public override float GetCellViewSize(int dataIndex)
-		//		{
-		//			// in this example, even numbered cells are 30 pixels tall, odd numbered cells are 100 pixels tall
-		//			return (dataIndex % 2 == 0 ? 120f : 100f);
-		//		}
-
-		/// <summary>
-		/// Gets the cell to be displayed. You can have numerous cell types, allowing variety in your list.
-		/// Some examples of this would be headers, footers, and other grouping cells.
-		/// </summary>
-		/// <param name="scroller">The scroller requesting the cell</param>
-		/// <param name="dataIndex">The index of the data that the scroller is requesting</param>
-		/// <param name="cellIndex">The index of the list. This will likely be different from the dataIndex if the scroller is looping</param>
-		/// <returns>The cell for the scroller to use</returns>
-		//		public override ScrollCellView GetCellView(int dataIndex, int cellIndex)
-		//		{
-		//			// first, we get a cell from the scroller by passing a prefab.
-		//			// if the scroller finds one it can recycle it will do so, otherwise
-		//			// it will create a new cell.
-		//			TestCellView cellView = this.GetCellView(cellViewPrefab) as TestCellView;
-		//
-		//			// set the name of the game object to the cell's data index.
-		//			// this is optional, but it helps up debug the objects in
-		//			// the scene hierarchy.
-		//			cellView.name = "Cell " + dataIndex.ToString();
-		//
-		//			// in this example, we just pass the data to our cell's view which will update its UI
-		//			cellView.SetData(_data[dataIndex]);
-		//
-		//			// return the cell to the scroller
-		//			return cellView;
-		//		}
 
 		#endregion
 	}

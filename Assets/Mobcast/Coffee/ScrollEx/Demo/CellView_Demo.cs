@@ -12,7 +12,7 @@ namespace EnhancedScrollerDemos.SuperSimpleDemo
 	/// <summary>
 	/// This is the view of our cell which handles how the cell looks.
 	/// </summary>
-	public class TestCellView : ScrollCellView
+	public class CellView_Demo : ScrollCellView
 	{
 		/// <summary>
 		/// A reference to the UI Text element to display the cell data
