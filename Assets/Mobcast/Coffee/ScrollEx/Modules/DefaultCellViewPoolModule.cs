@@ -52,6 +52,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			cellView.transform.localPosition = Vector3.zero;
 			cellView.transform.localRotation = Quaternion.identity;
 			cellView.transform.localScale = Vector3.zero;
+			cellView.gameObject.SetActive(true);
 			return cellView;
 		}
 

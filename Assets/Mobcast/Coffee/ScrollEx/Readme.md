@@ -10,7 +10,7 @@ ScrollEx
 
 ## Requirement
 
-* Unity5.3+ *(included Unity 2017.x)*
+* Unity5.4+ *(included Unity 2017.x)*
 * No other SDK
 
 

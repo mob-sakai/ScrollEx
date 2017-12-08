@@ -22,8 +22,6 @@ namespace Mobcast.Coffee.UI
 			BottomOrRight,
 		}
 
-
-
 		public IScrollViewController controller { get; set; }
 
 		public ICellViewPool scrollPool { get; set; }
@@ -258,7 +256,7 @@ namespace Mobcast.Coffee.UI
 		{
 			for (var i = 0; i < _activeCellViews.Count; i++)
 			{
-				_activeCellViews[i].RefreshCellView();
+				_activeCellViews[i].OnRefresh();
 			}
 		}
 
@@ -933,9 +931,10 @@ namespace Mobcast.Coffee.UI
 
 			c.offsetMax = Vector2.zero;
 			c.offsetMin = Vector2.zero;
-			c.localPosition = Vector3.zero;
+//			c.localPosition = Vector3.zero;
 			c.localRotation = Quaternion.identity;
 			c.localScale = Vector3.one;
+			c.anchoredPosition = Vector2.zero;
 
 			lg.childAlignment = TextAnchor.UpperLeft;
 			lg.childForceExpandHeight = true;

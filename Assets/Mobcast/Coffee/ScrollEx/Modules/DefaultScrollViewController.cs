@@ -8,22 +8,32 @@ namespace Mobcast.Coffee.UI
 {
 	/// <summary>
 	/// スクロールビューの制御インターフェース.
+	/// スクロールに利用するデータの件数の把握と、n番目のデータのセルビューとセルサイズの把握を役割としてもたせます.
+	/// 継承したクラスのインスタンスを ScrollRectEx.controller に割り当てることで、スクロールビューの制御を委任できます.
 	/// </summary>
 	public interface IScrollViewController
 	{
 		/// <summary>
 		/// データの要素数を取得します.
 		/// </summary>
+		/// <returns>データの要素数.</returns>
 		int GetDataCount();
 
 		/// <summary>
 		/// データインデックスに対するセルビューのサイズを取得します.
+		/// セルビューサイズをデータに基づいて可変させたい場合、このメソッドを利用して調整できます.
 		/// </summary>
+		/// <returns>セルビューサイズ.</returns>
+		/// <param name="dataIndex">データインデックス.</param>
 		float GetCellViewSize(int dataIndex);
 
 		/// <summary>
-		/// データインデックスに紐付けるセルビューを取得します.
+		/// データインデックスに対するセルビューを取得します.
+		/// オブジェクトプールを利用して取得/新規作成する場合、GetCellView([TEMPLATE_CELLVIEW_PREFAB]) でセルビューを取得できます.
+		/// 取得したセルビューに対し、データを引き渡してください.
 		/// </summary>
+		/// <returns>セルビュー.</returns>
+		/// <param name="dataIndex">データインデックス.</param>
 		ScrollCellView GetCellView(int dataIndex);
 	}
 
