@@ -17,26 +17,27 @@ namespace Mobcast.Coffee.UI.ScrollModule
 	[Serializable]
 	public class SnapModule
 	{
-#region Serialize
+		#region Serialize
 
 		[SerializeField] bool m_SnapOnEndDrag = false;
-		[SerializeField][Range(10,1000)] float m_VelocityThreshold = 200;
+		[SerializeField][Range(10, 1000)] float m_VelocityThreshold = 200;
+		[SerializeField][Range(20, 500)]  float m_SwipeThreshold = 40;
 
-#endregion Serialize
+		#endregion Serialize
 
-#region Public
+		#region Public
 
-		public ScrollRectEx handler { get; set;}
+		public ScrollRectEx handler { get; set; }
 
 		/// <summary>
 		/// ドラッグが終了した際、スナップをトリガします.
 		/// </summary>
-		public bool snapOnEndDrag { get{ return m_SnapOnEndDrag;} set{ m_SnapOnEndDrag = value;} }
+		public bool snapOnEndDrag { get { return m_SnapOnEndDrag; } set { m_SnapOnEndDrag = value; } }
 
 		/// <summary>
 		/// スクロール速度が値以下になったとき、Tweenを実行します.
 		/// </summary>
-		public float velocityThreshold { get{ return m_VelocityThreshold;} set{ m_VelocityThreshold = value;} }
+		public float velocityThreshold { get { return m_VelocityThreshold; } set { m_VelocityThreshold = value; } }
 
 		public event Action onEndNextTween;
 
@@ -50,26 +51,47 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		{
 			_StopScrollTween();
 			_isDragging = true;
+			_dragStartIndex = handler.activeIndex;
 		}
 
 		public void OnEndDrag(PointerEventData eventData)
 		{
 			_isDragging = false;
-			// スナップをトリガ. Tween中の場合はトリガしない.
-			_triggerSnap = (_coTweening == null) && snapOnEndDrag;
+			if (_coTweening != null)
+				return;
 
+			// インデックスに変化がある、またはスクロール速度が早い場合ドラッグと判定します.
+			// ドラッグ完了後は、スナップをトリガします.
+			int index = handler.activeIndex;
 			_oldVelocity = velocity;
+			if (index != _dragStartIndex || m_VelocityThreshold < _oldVelocity)
+			{
+				_triggerSnap = snapOnEndDrag;
+				return;
+			}
+
+			// スワイプ量がしきい値以上の場合、前後のインデックスへスナップします.
+			float diff = handler.scrollRect.vertical
+					? eventData.position.y - eventData.pressPosition.y
+					: -eventData.position.x + eventData.pressPosition.x;
+			int newIndex = 0 < diff ? index + 1 : index - 1;
+			if (m_SwipeThreshold < Mathf.Abs(diff) && handler.CanJumpTo(newIndex))
+			{
+				handler.JumpTo(newIndex);
+			}
 		}
 
 		float velocity { get { return handler.scrollRect.vertical ? handler.scrollRect.velocity.y : handler.scrollRect.velocity.x; } }
 
 		public void Update()
 		{
+			// スクロール後、しばらくしたらスナップをトリガします.
 			if (0 < _mouseScrollCount && _mouseScrollCount-- == 0 && (_coTweening == null) && snapOnEndDrag)
 			{
 				_triggerSnap = true;
 			}
 
+			// スナップがトリガされている場合、直近2フレームの平均速度がしきい値以下になったときに、最も近いインデックスへジャンプします.
 			if (!_isDragging && _triggerSnap)
 			{
 				float v = velocity;
@@ -80,6 +102,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 					_triggerSnap = false;
 					handler.JumpTo(handler.activeIndex);
 				}
+				// スクロール速度が急に0になることがあるので対策します.
 				else if (handler.scrollRect.inertia && v == 0f)
 				{
 					v = average;
@@ -91,16 +114,19 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			}
 		}
 
+		/// <summary>
+		/// Tweenを実行します.
+		/// </summary>
 		public void StartScrollTween(Tweening.TweenMethod tweenType, float time, float startValue, float endValue)
 		{
 			_StopScrollTween();
 			_coTweening = handler.scrollRect.StartCoroutine(_CoScrollTweening(tweenType, time, startValue, endValue));
 		}
 
-#endregion Public
+		#endregion Public
 
 
-#region Private
+		#region Private
 
 		bool _isDragging;
 		int _mouseScrollCount;
@@ -109,6 +135,17 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		bool _inertia = false;
 		ScrollRect.MovementType _movementType;
 		float _oldVelocity = 0;
+		int _dragStartIndex;
+
+		void _JumpToPrev()
+		{
+			handler.JumpTo(handler.activeIndex - 1);
+		}
+
+		void _JumpToNext()
+		{
+			handler.JumpTo(handler.activeIndex + 1);
+		}
 
 		void _StopScrollTween()
 		{
@@ -163,6 +200,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			_StopScrollTween();
 			yield break;
 		}
-#endregion Private
+
+		#endregion Private
 	}
 }
