@@ -16,7 +16,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		static void CreateHorizontalScrollRectEx(MenuCommand command)
 		{
 			// Verticalを生成
-			CreateScrollRectEx(null);
+			CreateVerticalScrollRectEx(null);
 			var ex = Selection.activeGameObject.GetComponent<ScrollRectEx>();
 			ex.name = "Scroll View (Horizontal)";
 
@@ -58,7 +58,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		}
 
 		[MenuItem("GameObject/UI/Scroll Rect Ex (Verticlal)")]
-		static void CreateScrollRectEx(MenuCommand command)
+		static void CreateVerticalScrollRectEx(MenuCommand command)
 		{
 			RectTransform rt;
 
@@ -97,7 +97,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			SetRt(rt, HAnchor.Expand, VAnchor.Top, TextAnchor.LowerCenter, new Vector2(0, 10), new Vector2(-100, 20));
 
 			// インジケータ生成
-			CreateScrollIndicator(null);
+			CreateVerticalScrollIndicator(null);
 			var indicator = Selection.activeGameObject.GetComponent<ScrollIndicator>();
 			ex.indicator = indicator;
 
@@ -141,7 +141,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		static void CreateHorizontalScrollIndicator(MenuCommand command)
 		{
 			// Verticalを生成
-			CreateScrollIndicator(null);
+			CreateVerticalScrollIndicator(null);
 			var indicator = Selection.activeGameObject.GetComponent<ScrollIndicator>();
 
 			RectTransformUtility.FlipLayoutAxes(indicator.transform as RectTransform, false, true);
@@ -149,8 +149,8 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			ConvertTo<HorizontalLayoutGroup>(indicator.layoutGroup);
 		}
 
-		[MenuItem("GameObject/UI/Scroll Indicator")]
-		static void CreateScrollIndicator(MenuCommand command)
+		[MenuItem("GameObject/UI/Scroll Indicator (Vertical)")]
+		static void CreateVerticalScrollIndicator(MenuCommand command)
 		{
 			RectTransform rt;
 

@@ -138,5 +138,4 @@ namespace Mobcast.Coffee.UI
 			}
 		}
 	}
-	//	}
 }

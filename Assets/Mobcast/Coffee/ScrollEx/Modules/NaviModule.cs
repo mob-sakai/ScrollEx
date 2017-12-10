@@ -16,8 +16,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 	{
 #region Serialize
 
-//		[SerializeField] bool m_JumpOnSwipe = false;
-//		[SerializeField][Range(20,500)]  float m_SwipeThreshold = 40;
 		[SerializeField] Button m_PreviousButton;
 		[SerializeField] Button m_NextButton;
 #endregion Serialize
@@ -26,40 +24,8 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 		public ScrollRectEx handler { get; set;}
 
-//		public bool jumpOnSwipe { get{ return m_JumpOnSwipe;} set{ m_JumpOnSwipe = value;} }
-//		public float swipeThreshold { get{ return m_SwipeThreshold;} set{ m_SwipeThreshold = value;} }
 		public Button previousButton { get{ return m_PreviousButton;} set{ m_PreviousButton = value; _changedButton = true;} }
 		public Button nextButton { get{ return m_NextButton;} set{ m_NextButton = value; _changedButton = true;} }
-
-		public void OnBeginDrag(PointerEventData eventData)
-		{
-//			_dragStartIndex = handler.activeIndex;
-//			_dragStartPosition = handler.scrollRect.vertical ? eventData.position.y : -eventData.position.x;
-		}
-
-		public void OnEndDrag(PointerEventData eventData)
-		{
-//			if (!m_JumpOnSwipe)
-//				return;
-//
-//			int index = handler.activeIndex;
-//			var scroll = handler.scrollRect;
-//			float velocity = Mathf.Abs(scroll.vertical ? scroll.velocity.y : scroll.velocity.x);
-//
-//			if (index != _dragStartIndex || 100 < velocity)
-//				return;
-//			
-//			float diff = (scroll.vertical ? eventData.position.y : -eventData.position.x) - _dragStartPosition;
-//			if (m_SwipeThreshold < diff&& handler.CanJumpTo(index + 1))
-//			{
-//				_JumpToNext();
-//			}
-//			else if (diff < -m_SwipeThreshold && handler.CanJumpTo(index - 1))
-//			{
-//				_JumpToPrevious();
-//			}
-		}
-
 
 		public void Update()
 		{
@@ -95,8 +61,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 #region Private
 
-//		int _dragStartIndex;
-//		float _dragStartPosition;
 		bool _changedButton = true;
 
 		void _JumpToPrevious()

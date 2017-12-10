@@ -939,10 +939,8 @@ namespace Mobcast.Coffee.UI
 		/// </summary>
 		public virtual void OnBeginDrag(PointerEventData eventData)
 		{
-			naviModule.OnBeginDrag(eventData);
 			snapModule.OnBeginDrag(eventData);
 			autoRotationModule.OnBeginDrag(eventData);
-
 		}
 
 		/// <summary>
@@ -950,7 +948,6 @@ namespace Mobcast.Coffee.UI
 		/// </summary>
 		public virtual void OnEndDrag(PointerEventData eventData)
 		{
-			naviModule.OnEndDrag(eventData);
 			snapModule.OnEndDrag(eventData);
 			autoRotationModule.OnEndDrag(eventData);
 		}
@@ -966,22 +963,6 @@ namespace Mobcast.Coffee.UI
 					value = _loopLastScrollPosition - (_loopFirstJumpTrigger - value);
 			}
 			scrollPosition = value;
-		}
-
-		/// <summary>
-		/// 最大ページ数を取得します.
-		/// </summary>
-		public int GetPageCount()
-		{
-			return controller.GetDataCount();
-		}
-
-		/// <summary>
-		/// 現在のページ数を取得します.
-		/// </summary>
-		public int GetPageIndex()
-		{
-			return activeIndex;
 		}
 	}
 }
