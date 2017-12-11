@@ -164,7 +164,7 @@ namespace Mobcast.Coffee.UI
 			set
 			{
 				// 非ループ時はスクロールのオーバーランを防ぐために、スクロール制限をかけます.
-				if (!loop)
+				if (!loop && 0 < _cellViewSizeArray.Count)
 				{
 					var min = -scrollRectSize;
 					var max = GetScrollPositionFromIndex(_cellViewSizeArray.Count - 1) + scrollRectSize;
@@ -254,6 +254,10 @@ namespace Mobcast.Coffee.UI
 		/// データの要素数を取得します.
 		/// </summary>
 		public virtual int dataCount { get { return controller.GetDataCount(); } }
+
+		public int firstPaddingSiblingIndex { get { return _firstPadding.transform.GetSiblingIndex(); } }
+
+		public int lastPaddingSiblingIndex { get { return _lastPadding.transform.GetSiblingIndex(); } }
 
 		/// <summary>
 		/// ScrollRect自体の大きさです.
@@ -401,7 +405,7 @@ namespace Mobcast.Coffee.UI
 		public float GetScrollPositionFromIndex(int cellViewIndex, bool beforeCell = true)
 		{
 			// 要素がない場合、0を返します.
-			if (dataCount == 0)
+			if (dataCount == 0 || _cellViewOffsetArray.Count == 0)
 				return 0;
 
 			// 先頭の要素を指定した場合、paddingサイズを返します.
@@ -455,6 +459,7 @@ namespace Mobcast.Coffee.UI
 		float _loopLastJumpTrigger;
 
 		float _lastScrollRectSize;
+		float _lastScrollSize;
 
 		bool _lastLoop;
 
@@ -858,7 +863,7 @@ namespace Mobcast.Coffee.UI
 			// デフォルトのスクロールビューコントローラ生成.
 			if (controller == null)
 			{
-				controller = new DefaultScrollViewController(scrollRect);
+				controller = new DefaultScrollViewController(this);
 			}
 
 			// インジケータコールバックを設定
@@ -913,11 +918,13 @@ namespace Mobcast.Coffee.UI
 			if (
 				(loop && _lastScrollRectSize != scrollRectSize)
 				|| (loop != _lastLoop)
+				|| (_lastScrollSize != scrollSize)
 				|| (_lastRectOffset != _layoutGroupForContent.padding)
 				|| (_lastSpacing != _layoutGroupForContent.spacing))
 			{
 				_Resize(true);
 				_lastScrollRectSize = scrollRectSize;
+				_lastScrollSize = scrollSize;
 
 				_lastLoop = loop;
 				_lastRectOffset = _layoutGroupForContent.padding;

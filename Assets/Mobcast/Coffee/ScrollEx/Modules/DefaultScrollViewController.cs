@@ -43,12 +43,12 @@ namespace Mobcast.Coffee.UI
 	/// </summary>
 	public sealed class DefaultScrollViewController : IScrollViewController
 	{
-		public DefaultScrollViewController(ScrollRect scroll)
+		public DefaultScrollViewController(ScrollRectEx scroll)
 		{
 			_scroll = scroll;
 		}
 
-		readonly ScrollRect _scroll;
+		readonly ScrollRectEx _scroll;
 
 		/// <summary>
 		/// コントローラーがもつ、データの要素数を取得します.
@@ -64,14 +64,20 @@ namespace Mobcast.Coffee.UI
 		/// </summary>
 		public float GetCellViewSize(int dataIndex)
 		{
+			int sibling = dataIndex;
+			if (_scroll.firstPaddingSiblingIndex <= sibling)
+				sibling++;
+			if (_scroll.lastPaddingSiblingIndex <= sibling)
+				sibling++;
+
 			// デフォルトコントローラー: サイズは、RectTransformまたはLayoutElementから取得します.
-			var rt = _scroll.content.GetChild(dataIndex) as RectTransform;
+			var rt = _scroll.content.GetChild(sibling) as RectTransform;
 			var layoutElement = rt.GetComponent<LayoutElement>();
 
 			if (layoutElement)
-				return _scroll.vertical ? layoutElement.preferredHeight : layoutElement.preferredWidth;
+				return _scroll.scrollRect.vertical ? layoutElement.preferredHeight : layoutElement.preferredWidth;
 			else
-				return _scroll.vertical ? rt.rect.height : rt.rect.width;
+				return _scroll.scrollRect.vertical ? rt.rect.height : rt.rect.width;
 		}
 
 		/// <summary>
