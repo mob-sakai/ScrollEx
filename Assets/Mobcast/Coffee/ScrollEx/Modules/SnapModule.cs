@@ -103,7 +103,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 				if (Mathf.Abs(average) <= velocityThreshold)
 				{
-					Debug.LogFormat("{0}, {1}, {2}", handler.scrollPosition, handler.scrollSize, handler.scrollRectSize);
 					_triggerSnap = false;
 					handler.JumpTo(handler.activeIndex);
 				}

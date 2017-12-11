@@ -52,7 +52,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			// VerticalLayoutを全てHorizontalLayoutに
 			foreach (var vl in ex.GetComponentsInChildren<VerticalLayoutGroup>(true))
 			{
-				Debug.Log(vl);
 				ConvertTo<HorizontalLayoutGroup>(vl);
 			}
 		}
