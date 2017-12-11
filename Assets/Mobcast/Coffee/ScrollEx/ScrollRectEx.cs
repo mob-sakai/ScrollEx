@@ -226,6 +226,14 @@ namespace Mobcast.Coffee.UI
 				if (dataCount <= 0 || _cellViewOffsetArray.Count <= 0)
 					return -1;
 
+				if (!loop)
+				{
+					if (scrollPosition < 1)
+						return 0;
+					else if (scrollSize -1 < scrollPosition)
+						return dataCount - 1;
+				}
+
 				var pos = scrollPosition + (scrollRectSize * Mathf.Clamp01((int)m_Alignment * 0.5f));
 				var cellViewIndex = _GetIndexFromScrollPosition(pos, 0, _cellViewOffsetArray.Count - 1);
 				return cellViewIndex % dataCount;
@@ -890,6 +898,7 @@ namespace Mobcast.Coffee.UI
 
 			// 各モジュールを更新.
 //			indicatorModule.Update();
+			snapModule.Update();
 			naviModule.Update();
 			autoRotationModule.Update();
 

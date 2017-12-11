@@ -79,6 +79,10 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			{
 				handler.JumpTo(newIndex);
 			}
+			else
+			{
+				_triggerSnap = snapOnEndDrag;
+			}
 		}
 
 		float velocity { get { return handler.scrollRect.vertical ? handler.scrollRect.velocity.y : handler.scrollRect.velocity.x; } }
@@ -99,6 +103,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 				if (Mathf.Abs(average) <= velocityThreshold)
 				{
+					Debug.LogFormat("{0}, {1}, {2}", handler.scrollPosition, handler.scrollSize, handler.scrollRectSize);
 					_triggerSnap = false;
 					handler.JumpTo(handler.activeIndex);
 				}
