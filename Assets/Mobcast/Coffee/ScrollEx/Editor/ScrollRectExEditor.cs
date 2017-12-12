@@ -110,16 +110,10 @@ namespace Mobcast.Coffee.UI
 			{
 				EditorGUILayout.LabelField(s_ContentNavi, EditorStyles.boldLabel);
 				spModule = serializedObject.FindProperty("m_NaviModule");
-//				var spJumpOnSwipe = spModule.FindPropertyRelative("m_JumpOnSwipe");
-//				EditorGUILayout.PropertyField(spJumpOnSwipe);
-//				using (new EditorGUI.DisabledGroupScope(!spJumpOnSwipe.boolValue))
-//				{
-//					EditorGUI.indentLevel++;
-//					EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_SwipeThreshold"));
-//					EditorGUI.indentLevel--;
-//				}
 				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_PreviousButton"));
 				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_NextButton"));
+				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_FirstButton"));
+				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_LastButton"));
 			}
 
 			//GUILayout.Space(10);
