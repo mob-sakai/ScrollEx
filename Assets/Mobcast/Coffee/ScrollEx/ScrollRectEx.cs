@@ -18,8 +18,29 @@ namespace Mobcast.Coffee.UI
 			Center,
 			BottomOrRight,
 		}
+		IScrollViewController _controller;
+		public IScrollViewController controller
+		{
+			get
+			{
+				return _controller;
+			}
+			set
+			{
+				if (_controller == value)
+					return;
 
-		public IScrollViewController controller { get; set; }
+				_controller = value;
+
+				// デフォルトコントローラ以外の場合、ContentSizeFitterを削除削除する必要がある
+				if (!(_controller is DefaultScrollViewController))
+				{
+					var sizeFitter = content.GetComponent<ContentSizeFitter>();
+					if (sizeFitter)
+						GameObject.Destroy(sizeFitter);
+				}
+			}
+		}
 
 		public ICellViewPool scrollPool { get; set; }
 
