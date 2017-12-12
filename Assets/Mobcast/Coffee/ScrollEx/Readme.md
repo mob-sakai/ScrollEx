@@ -60,6 +60,41 @@ ScrollRectExは、EnhancedScrollerにインスパイアされたスクロール�
 
 ## Release Notes
 
+### ver.0.2.0:
+
+* Supports Unity 5.5+
+* Fixed: ContentSizeFitter issue
+* Feature: Buttons to jump to first/last index.
+
 ### ver.0.1.0:
 
-* 
+* MVCパターン
+* オブジェクトプール
+* ループ（Controller利用時のみ：後述）
+* インデックスジャンプ
+* 複数のセルビューを組み合わせたスクロール
+* 実行時に大きさを決定するセルビュー
+* 【New!】ドラッグ終了時、最も近いセルにスナップ
+* 【New!】スワイプ時、前後のセルにジャンプ
+* 【New!】前後にジャンプするボタン
+* 【New!】現在のスクロールインデックスを示すインジゲータ
+* 【New!】自動送り
+
+
+
+
+## License
+MIT
+
+
+
+## Author
+[mob-sakai](https://github.com/mob-sakai)
+
+
+
+
+## See Also
+
+* GitHub Page : https://github.com/mob-sakai/UITransition
+* Issue tracker : https://github.com/mob-sakai/UITransition/issues
