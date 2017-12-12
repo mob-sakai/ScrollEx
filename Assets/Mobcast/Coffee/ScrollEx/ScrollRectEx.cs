@@ -855,6 +855,12 @@ namespace Mobcast.Coffee.UI
 			lg.childAlignment = TextAnchor.UpperLeft;
 			lg.childForceExpandHeight = true;
 			lg.childForceExpandWidth = true;
+#if UNITY_5_5_OR_NEWER
+			lg.childControlHeight = true;
+			lg.childControlWidth = true;
+#endif
+
+
 
 			// create the padder objects
 			GameObject go = new GameObject("___FirstPadder", typeof(RectTransform), typeof(LayoutElement));

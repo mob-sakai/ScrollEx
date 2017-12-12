@@ -162,6 +162,10 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			layout.childForceExpandHeight = false;
 			layout.childForceExpandWidth = false;
 			layout.childAlignment = TextAnchor.MiddleCenter;
+#if UNITY_5_5_OR_NEWER
+			layout.childControlHeight = true;
+			layout.childControlWidth = true;
+#endif
 
 			// インジケータの背景調整
 			var image = indicator.gameObject.GetComponent<Image>();
@@ -173,6 +177,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			var toggle = AddElement<Toggle>("GameObject/UI/Toggle", layout.transform, "Template Toggle", out rt);
 			SetImage(toggle.targetGraphic as Image, "UI/Skin/Knob.psd", new Color(0.65f, 0.65f, 0.65f), new Vector2(16, 16), Image.Type.Simple);
 			SetImage(toggle.graphic as Image, "UI/Skin/Knob.psd", Color.white, new Vector2(10, 10), Image.Type.Simple);
+			SetRt(toggle.targetGraphic.transform as RectTransform, HAnchor.Center, VAnchor.Center, TextAnchor.MiddleCenter, Vector2.zero, new Vector2(16, 16));
 //			image = (toggle.targetGraphic as Image);
 //			image.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
 //			image.color = new Color(0.65f,0.65f,0.65f);
