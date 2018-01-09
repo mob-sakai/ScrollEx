@@ -111,6 +111,9 @@ namespace Mobcast.Coffee.UI
 			{
 				if (!_layoutGroupForContent)
 				{
+					if (!content)
+						return null;
+					
 					_layoutGroupForContent = content.GetComponent<HorizontalOrVerticalLayoutGroup>();
 					if (!_layoutGroupForContent)
 					{

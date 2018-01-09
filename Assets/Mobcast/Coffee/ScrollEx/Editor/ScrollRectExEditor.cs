@@ -2,9 +2,11 @@
 using UnityEditor;
 using UnityEditor.UI;
 using System.Linq;
+using UnityEditor.AnimatedValues;
 using System.Collections;
 using UnityEngine.UI;
 using Axis = UnityEngine.RectTransform.Axis;
+using UnityEngine.Events;
 
 namespace Mobcast.Coffee.UI
 {
@@ -12,65 +14,62 @@ namespace Mobcast.Coffee.UI
 	[CustomEditor(typeof(ScrollRectEx), true)]
 	public class ScrollRectExEditor : Editor
 	{
-		static readonly GUIContent s_ContentSnap = new GUIContent("Snap / Smoothing");
-		static readonly GUIContent s_ContentNavi = new GUIContent("Navigation");
-		static readonly GUIContent s_ContentIndicator = new GUIContent("Indicator");
-		static readonly GUIContent s_ContentAutoRotation = new GUIContent("AutoRotation");
 		static readonly GUIContent s_ContentLayoutGroup = new GUIContent("Content Layout Group");
 		static readonly GUIContent s_ContentDirection = new GUIContent("Direction");
 		static readonly GUIContent[] s_ContentDirectionPopup = { new GUIContent("Horizontal"), new GUIContent("Vertical") };
 
+		ModuleGroup _groupLayout;
+		ModuleGroup _groupSnap;
+		ModuleGroup _groupNavi;
+		ModuleGroup _groupAutoRotation;
+		ModuleGroup _groupIndicator;
+
+		void OnEnable()
+		{
+			_groupLayout = new ModuleGroup(new GUIContent("Layout"), Repaint);
+			_groupSnap = new ModuleGroup(new GUIContent("Snap / Smoothing"), Repaint);
+			_groupNavi = new ModuleGroup(new GUIContent("Navigation"), Repaint);
+			_groupIndicator = new ModuleGroup(new GUIContent("Indicator"), Repaint);
+			_groupAutoRotation = new ModuleGroup(new GUIContent("AutoRotation"), Repaint);
+		}
+
 		void DrawLayoutDirection()
 		{
-			var scrolls = targets
-				.OfType<ScrollRectEx>()
-				.Select(x => x.scrollRect)
-				.Where(x => !object.ReferenceEquals(x, null))
-				.ToArray();
-
-			if (0 < scrolls.Length)
-			{
-				var so = new SerializedObject(scrolls);
-				var spVertical = so.FindProperty("m_Vertical");
-				var spHorizontal = so.FindProperty("m_Horizontal");
-				var id = spVertical.boolValue ? 1 : 0;
-				EditorGUI.showMixedValue = spVertical.hasMultipleDifferentValues;
-
-				EditorGUI.BeginChangeCheck();
-				id = EditorGUILayout.Popup(s_ContentDirection, id, s_ContentDirectionPopup);
-				if (EditorGUI.EndChangeCheck())
-				{
-					spVertical.boolValue = id == 1;
-					spHorizontal.boolValue = id == 0;
-					so.ApplyModifiedProperties();
-				}
-//				EditorGUI.showMixedValue = false;
-			}
-			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Loop"));
+			
 		}
 
 		void DrawLayoutPaddingAndSpace()
 		{
-			var layouts = targets
-				.OfType<ScrollRectEx>()
-				.Select(x => x.layoutGroup)
-				.Where(x => !object.ReferenceEquals(x, null))
-				.ToArray();
-			
-			if (0 < layouts.Length)
+		}
+
+		public class ModuleGroup
+		{
+			AnimBool _anim;
+			GUIContent _label;
+			string _prefsKey;
+
+			public ModuleGroup(GUIContent label, UnityAction callback)
 			{
-				EditorGUI.showMixedValue = 1 < layouts.Length;
-				EditorGUILayout.ObjectField(s_ContentLayoutGroup, (target as ScrollRectEx).layoutGroup, typeof(HorizontalOrVerticalLayoutGroup), true);
+				_prefsKey = "ModuleGroup_" + label.text;
+				_label = label;
+				_anim = new AnimBool(EditorPrefs.GetBool(_prefsKey, true), callback);
+			}
 
-				var so = new SerializedObject(layouts);
-				var spPadding = so.FindProperty("m_Padding");
-//				spPadding.isExpanded = true;
+			public bool Begin()
+			{
+				EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+				if (GUILayout.Button(_label, EditorStyles.boldLabel))
+				{
+					_anim.target = !_anim.target;
+					EditorPrefs.SetBool(_prefsKey, _anim.target);
+				}
+				return EditorGUILayout.BeginFadeGroup (_anim.faded);
+			}
 
-				EditorGUI.indentLevel++;
-				EditorGUILayout.PropertyField(spPadding, true);
-				EditorGUILayout.PropertyField(so.FindProperty("m_Spacing"));
-				EditorGUI.indentLevel--;
-				so.ApplyModifiedProperties();
+			public void End()
+			{
+				EditorGUILayout.EndFadeGroup ();
+				EditorGUILayout.EndVertical();
 			}
 		}
 
@@ -78,17 +77,72 @@ namespace Mobcast.Coffee.UI
 		{
 			serializedObject.Update();
 
-//			GUILayout.Space(10);
-//			EditorGUILayout.LabelField(s_ContentLayout, EditorStyles.boldLabel);
 			DrawLayoutDirection();
 			DrawLayoutPaddingAndSpace();
 
+
+
+			//################################
+			// Layout module.
+			//################################
+			if (_groupLayout.Begin())
+			{
+				var scrolls = targets
+					.OfType<ScrollRectEx>()
+					.Select(x => x.scrollRect)
+					.Where(x => !object.ReferenceEquals(x, null))
+					.ToArray();
+				
+				if (0 < scrolls.Length)
+				{
+					var so = new SerializedObject(scrolls);
+					var spVertical = so.FindProperty("m_Vertical");
+					var spHorizontal = so.FindProperty("m_Horizontal");
+					var id = spVertical.boolValue ? 1 : 0;
+					EditorGUI.showMixedValue = spVertical.hasMultipleDifferentValues;
+
+					EditorGUI.BeginChangeCheck();
+					id = EditorGUILayout.Popup(s_ContentDirection, id, s_ContentDirectionPopup);
+					if (EditorGUI.EndChangeCheck())
+					{
+						spVertical.boolValue = id == 1;
+						spHorizontal.boolValue = id == 0;
+						so.ApplyModifiedProperties();
+					}
+				}
+
+				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Loop"));
+
+				var layouts = targets
+					.OfType<ScrollRectEx>()
+					.Select(x => x.layoutGroup)
+					.Where(x => !object.ReferenceEquals(x, null))
+					.ToArray();
+				
+				if (0 < layouts.Length)
+				{
+					EditorGUI.showMixedValue = 1 < layouts.Length;
+					EditorGUILayout.ObjectField(s_ContentLayoutGroup, (target as ScrollRectEx).layoutGroup, typeof(HorizontalOrVerticalLayoutGroup), true);
+
+					var so = new SerializedObject(layouts);
+					var spPadding = so.FindProperty("m_Padding");
+
+					EditorGUI.indentLevel++;
+					EditorGUILayout.PropertyField(spPadding, true);
+					EditorGUILayout.PropertyField(so.FindProperty("m_Spacing"));
+					EditorGUI.indentLevel--;
+					so.ApplyModifiedProperties();
+				}
+			}
+			_groupLayout.End();
+
 			SerializedProperty spModule;
 
-			GUILayout.Space(10);
-			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			//################################
+			// Snap module.
+			//################################
+			if (_groupSnap.Begin())
 			{
-				EditorGUILayout.LabelField(s_ContentSnap, EditorStyles.boldLabel);
 				spModule = serializedObject.FindProperty("m_SnapModule");
 				var spSnapOnEndDrag = spModule.FindPropertyRelative("m_SnapOnEndDrag");
 
@@ -104,22 +158,26 @@ namespace Mobcast.Coffee.UI
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_TweenMethod"));
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_TweenDuration"));
 			}
+			_groupSnap.End();
 
-//			GUILayout.Space(10);
-			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			//################################
+			// Navi module.
+			//################################
+			if (_groupNavi.Begin())
 			{
-				EditorGUILayout.LabelField(s_ContentNavi, EditorStyles.boldLabel);
 				spModule = serializedObject.FindProperty("m_NaviModule");
 				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_PreviousButton"));
 				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_NextButton"));
 				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_FirstButton"));
 				EditorGUILayout.PropertyField(spModule.FindPropertyRelative("m_LastButton"));
 			}
+			_groupNavi.End();
 
-			//GUILayout.Space(10);
-			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			//################################
+			// Auto rotation module.
+			//################################
+			if (_groupAutoRotation.Begin())
 			{
-				EditorGUILayout.LabelField(s_ContentAutoRotation, EditorStyles.boldLabel);
 				spModule = serializedObject.FindProperty("m_AutoRotationModule");
 				var spAutoJumpToNext = spModule.FindPropertyRelative("m_AutoJumpToNext");
 				EditorGUILayout.PropertyField(spAutoJumpToNext);
@@ -131,11 +189,13 @@ namespace Mobcast.Coffee.UI
 					EditorGUI.indentLevel--;
 				}
 			}
+			_groupAutoRotation.End();
 
-//			GUILayout.Space(10);
-			using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+			//################################
+			// Indicator module.
+			//################################
+			if (_groupIndicator.Begin())
 			{
-				EditorGUILayout.LabelField(s_ContentIndicator, EditorStyles.boldLabel);
 				EditorGUILayout.PropertyField(serializedObject.FindProperty("m_Indicator"));
 
 				var indicators = targets
@@ -154,6 +214,7 @@ namespace Mobcast.Coffee.UI
 					so.ApplyModifiedProperties();
 				}
 			}
+			_groupIndicator.End();
 
 			serializedObject.ApplyModifiedProperties();
 		}

@@ -83,14 +83,19 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			UnityEngine.Object.DestroyImmediate(ex.scrollRect.horizontalScrollbar.gameObject);
 			ex.scrollRect.horizontalScrollbar = null;
 
+
+			// ナビゲーション
+			var navigator = AddElement<RectTransform>("GameObject/Create Empty Child", ex.transform, "Navigator", out rt);
+			SetRt(rt, HAnchor.Expand, VAnchor.Expand, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero);
+
 			// 進むボタン
-			var nextButton = AddElement<Button>("GameObject/UI/Button", ex.transform, "Next Button", out rt);
+			var nextButton = AddElement<Button>("GameObject/UI/Button", navigator, "Next Button", out rt);
 			ex.naviModule.nextButton = nextButton;
 			nextButton.GetComponentInChildren<Text>(true).text = "v";
 			SetRt(rt, HAnchor.Expand, VAnchor.Bottom, TextAnchor.UpperCenter, new Vector2(0, -10), new Vector2(-100, 20));
 
 			// 戻るボタン
-			var prevButton = AddElement<Button>("GameObject/UI/Button", ex.transform, "Prev Button", out rt);
+			var prevButton = AddElement<Button>("GameObject/UI/Button", navigator, "Prev Button", out rt);
 			ex.naviModule.previousButton = prevButton;
 			prevButton.GetComponentInChildren<Text>(true).text = "^";
 			SetRt(rt, HAnchor.Expand, VAnchor.Top, TextAnchor.LowerCenter, new Vector2(0, 10), new Vector2(-100, 20));
