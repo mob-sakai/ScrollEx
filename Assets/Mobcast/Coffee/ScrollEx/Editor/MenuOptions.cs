@@ -290,6 +290,30 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			ConvertTo<UnityEngine.UI.GridLayoutGroup>(command.context);
 		}
 
+		[MenuItem("CONTEXT/ScrollRect/Convert To ScrollRect", true)]
+		static bool _ConvertToScrollRect(MenuCommand command)
+		{
+			return CanConvertTo<UnityEngine.UI.ScrollRect>(command.context);
+		}
+
+		[MenuItem("CONTEXT/ScrollRect/Convert To ScrollRect", false)]
+		static void ConvertToScrollRect(MenuCommand command)
+		{
+			ConvertTo<UnityEngine.UI.ScrollRect>(command.context);
+		}
+
+		[MenuItem("CONTEXT/ScrollRect/Convert To NestableScrollRect", true)]
+		static bool _ConvertToNestableScrollRect(MenuCommand command)
+		{
+			return CanConvertTo<NestableScrollRect>(command.context);
+		}
+
+		[MenuItem("CONTEXT/ScrollRect/Convert To NestableScrollRect", false)]
+		static void ConvertToNestableScrollRect(MenuCommand command)
+		{
+			ConvertTo<NestableScrollRect>(command.context);
+		}
+
 		#endregion Context Menus
 
 		/// <summary>
