@@ -18,6 +18,7 @@ namespace Mobcast.Coffee.UI
 			Center,
 			BottomOrRight,
 		}
+
 		IScrollViewController _controller;
 		public IScrollViewController controller
 		{
@@ -32,12 +33,24 @@ namespace Mobcast.Coffee.UI
 
 				_controller = value;
 
+				layoutGroup.childForceExpandHeight = true;
+				layoutGroup.childForceExpandWidth = true;
+
 				// デフォルトコントローラ以外の場合、ContentSizeFitterを削除削除する必要がある
-				if (!(_controller is DefaultScrollViewController))
+				if (_controller is DefaultScrollViewController)
 				{
-					var sizeFitter = content.GetComponent<ContentSizeFitter>();
-					if (sizeFitter)
-						GameObject.Destroy(sizeFitter);
+					layoutGroup.childControlHeight = false;
+					layoutGroup.childControlWidth = false;
+//					var sizeFitter = content.GetComponent<ContentSizeFitter>();
+//					if (sizeFitter)
+//						GameObject.Destroy(sizeFitter);
+				}
+				else
+				{
+					layoutGroup.childControlHeight = true;
+					layoutGroup.childControlWidth = true;
+					contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+					contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
 				}
 			}
 		}
@@ -102,6 +115,20 @@ namespace Mobcast.Coffee.UI
 				if (!_scrollRect)
 					_scrollRect = GetComponent<ScrollRect>();
 				return _scrollRect;
+			}
+		}
+
+
+		ContentSizeFitter _contentSizeFitter;
+		public ContentSizeFitter contentSizeFitter
+		{
+			get
+			{
+				if (!_contentSizeFitter)
+				{
+					_contentSizeFitter = layoutGroup.GetComponent<ContentSizeFitter>() ?? layoutGroup.gameObject.AddComponent<ContentSizeFitter>();
+				}
+				return _contentSizeFitter;
 			}
 		}
 
@@ -856,12 +883,12 @@ namespace Mobcast.Coffee.UI
 			c.anchoredPosition = Vector2.zero;
 
 			lg.childAlignment = TextAnchor.UpperLeft;
-			lg.childForceExpandHeight = true;
-			lg.childForceExpandWidth = true;
-#if UNITY_5_5_OR_NEWER
-			lg.childControlHeight = true;
-			lg.childControlWidth = true;
-#endif
+//			lg.childForceExpandHeight = true;
+//			lg.childForceExpandWidth = true;
+//#if UNITY_5_5_OR_NEWER
+//			lg.childControlHeight = true;
+//			lg.childControlWidth = true;
+//#endif
 
 
 

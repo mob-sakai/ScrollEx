@@ -11,6 +11,42 @@ using UnityEngine.Events;
 namespace Mobcast.Coffee.UI
 {
 	[CanEditMultipleObjects]
+	[CustomEditor(typeof(RectTransform), true)]
+	public class RectEditor : Editor
+	{
+		public override void OnInspectorGUI()
+		{
+//			base.OnInspectorGUI();
+
+			var e = CreateEditor(targets, System.Type.GetType("UnityEditor.RectTransformEditor, UnityEditor"));
+//
+//			e.DrawHeader();
+			//e.OnInspectorGUI();
+
+//			var e = System.Activator.CreateInstance(typeof(ScrollRectEditor));
+//			var e = CreateInstance(typeof(ScrollRectEditor));
+			Debug.Log(e);
+
+
+			EditorGUILayout.LabelField("ほげほげ");
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.BeginVertical();
+			e.OnInspectorGUI();
+			var rect = GUILayoutUtility.GetLastRect();
+			EditorGUILayout.EndVertical();
+
+			EditorGUILayout.BeginVertical(GUILayout.Width(10));
+			GUILayout.Button("R");
+			//GUILayout.Space(rect.height);
+			//GUILayout.Button("R");
+			GUI.Button(new Rect(rect.xMax, rect.y, 18, 18), "R");
+			EditorGUILayout.EndVertical();
+
+			EditorGUILayout.EndHorizontal();
+		}
+	}
+
+	[CanEditMultipleObjects]
 	[CustomEditor(typeof(ScrollRectEx), true)]
 	public class ScrollRectExEditor : Editor
 	{

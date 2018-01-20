@@ -123,6 +123,37 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			rt.sizeDelta = sizeDelta;
 		}
 
+		static void SetRt(RectTransform rt, Anchor anchor, TextAnchor pivot, Vector2 pos, Vector2 sizeDelta)
+		{
+			float ah = ((int)anchor % 4 - 1) * 0.5f;
+			float av = ((int)anchor / 4 - 1) * 0.5f;
+			rt.pivot = new Vector2(((int)pivot % 3) * 0.5f, (2 - (int)pivot / 3) * 0.5f);
+			rt.anchorMin = new Vector2(ah < 0 ? 0 : ah, av < 0 ? 0 : av);
+			rt.anchorMax = new Vector2(ah < 0 ? 1 : ah, av < 0 ? 1 : av);
+			rt.anchoredPosition = pos;
+			rt.sizeDelta = sizeDelta;
+		}
+
+		public enum Anchor
+		{
+			ExpandBoth,
+			ExpandLeft,
+			ExpandCenter,
+			ExpandRight,
+			LowerExpand,
+			LowerLeft,
+			LowerCenter,
+			LowerRight,
+			MiddleExpand,
+			MiddleLeft,
+			MiddleCenter,
+			MiddleRight,
+			UpperExpand,
+			UpperLeft,
+			UpperCenter,
+			UpperRight,
+		}
+
 		public enum HAnchor
 		{
 			Expand = -1,
@@ -140,6 +171,74 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		}
 
 		//		ScrollRectEx.Alignment.
+
+
+		[MenuItem("GameObject/UI/CreateHorizontalScrollNavigator (Verticlal)")]
+		static void ___CreateHorizontalScrollRectEx(MenuCommand command)
+		{
+			CreateHorizontalScrollNavigator(Selection.activeGameObject.GetComponent<ScrollRectEx>());
+		}
+
+		[MenuItem("GameObject/UI/CreateVerticalScrollNavigator (Verticlal)")]
+		static void ___CreateVerticalScrollRectEx(MenuCommand command)
+		{
+			CreateVerticalScrollNavigator(Selection.activeGameObject.GetComponent<ScrollRectEx>());
+		}
+
+		static void CreateHorizontalScrollNavigator(ScrollRectEx ex)
+		{
+			// Verticalを生成
+			CreateVerticalScrollNavigator(ex);
+
+			ex.naviModule.previousButton.GetComponentInChildren<Text>(true).text = "<";
+			ex.naviModule.nextButton.GetComponentInChildren<Text>(true).text = ">";
+			ex.naviModule.firstButton.GetComponentInChildren<Text>(true).text = "<\n<";
+			ex.naviModule.lastButton.GetComponentInChildren<Text>(true).text = ">\n>";
+
+			var rt = Selection.activeGameObject.transform as RectTransform;
+			RectTransformUtility.FlipLayoutAxes(rt, false, true);
+			RectTransformUtility.FlipLayoutOnAxis(rt, 0, false, true);
+		}
+
+		static void RotateNavigator(ScrollRectEx ex)
+		{
+		}
+
+		static void CreateVerticalScrollNavigator(ScrollRectEx ex)
+		{
+			RectTransform rt;
+
+			// Navigator parent
+			var navigator = AddElement<RectTransform>("GameObject/Create Empty Child", ex.transform, "Navigator", out rt);
+			SetRt(rt, Anchor.ExpandBoth, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero);
+
+			// Prev button.
+			var button = AddElement<Button>("GameObject/UI/Button", navigator, "Prev Button", out rt);
+			ex.naviModule.previousButton = button;
+			button.GetComponentInChildren<Text>(true).text = "^";
+			SetRt(rt, Anchor.UpperExpand,  TextAnchor.LowerCenter, new Vector2(0, 10), new Vector2(-100, 20));
+
+			// Next button.
+			button = AddElement<Button>("GameObject/UI/Button", navigator, "Next Button", out rt);
+			ex.naviModule.nextButton = button;
+			button.GetComponentInChildren<Text>(true).text = "v";
+			SetRt(rt, Anchor.LowerExpand,  TextAnchor.UpperCenter, new Vector2(0, -10), new Vector2(-100, 20));
+
+			// First button.
+			button = AddElement<Button>("GameObject/UI/Button", navigator, "First Button", out rt);
+			ex.naviModule.firstButton = button;
+			button.GetComponentInChildren<Text>(true).text = "^^";
+			SetRt(rt, Anchor.UpperExpand,  TextAnchor.LowerCenter, new Vector2(0, 30), new Vector2(-100, 20));
+
+			// Last button.
+			button = AddElement<Button>("GameObject/UI/Button", navigator, "Last Button", out rt);
+			ex.naviModule.lastButton = button;
+			button.GetComponentInChildren<Text>(true).text = "vv";
+			SetRt(rt, Anchor.LowerExpand,  TextAnchor.UpperCenter, new Vector2(0, -30), new Vector2(-100, 20));
+
+			Selection.activeGameObject = navigator.gameObject;
+		}
+
 
 		[MenuItem("GameObject/UI/Scroll Indicator (Horizontal)")]
 		static void CreateHorizontalScrollIndicator(MenuCommand command)
@@ -164,13 +263,7 @@ namespace Mobcast.Coffee.UI.ScrollModule
 
 			// レイアウトグループ追加
 			var layout = indicator.gameObject.AddComponent<VerticalLayoutGroup>();
-			layout.childForceExpandHeight = false;
-			layout.childForceExpandWidth = false;
 			layout.childAlignment = TextAnchor.MiddleCenter;
-#if UNITY_5_5_OR_NEWER
-			layout.childControlHeight = true;
-			layout.childControlWidth = true;
-#endif
 
 			// インジケータの背景調整
 			var image = indicator.gameObject.GetComponent<Image>();
@@ -183,14 +276,6 @@ namespace Mobcast.Coffee.UI.ScrollModule
 			SetImage(toggle.targetGraphic as Image, "UI/Skin/Knob.psd", new Color(0.65f, 0.65f, 0.65f), new Vector2(16, 16), Image.Type.Simple);
 			SetImage(toggle.graphic as Image, "UI/Skin/Knob.psd", Color.white, new Vector2(10, 10), Image.Type.Simple);
 			SetRt(toggle.targetGraphic.transform as RectTransform, HAnchor.Center, VAnchor.Center, TextAnchor.MiddleCenter, Vector2.zero, new Vector2(16, 16));
-//			image = (toggle.targetGraphic as Image);
-//			image.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
-//			image.color = new Color(0.65f,0.65f,0.65f);
-//			image.type = Image.Type.Simple;
-
-//			image = (toggle.graphic as Image);
-//			image.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
-//			(image.transform as RectTransform).sizeDelta = new Vector2(10, 10);
 
 			var element = toggle.gameObject.AddComponent<LayoutElement>();
 			element.preferredWidth = 20;
@@ -237,19 +322,19 @@ namespace Mobcast.Coffee.UI.ScrollModule
 		[MenuItem("CONTEXT/RectTransform/Flip Axes")]
 		static void FlipLayoutAxes(MenuCommand command)
 		{
-			RectTransformUtility.FlipLayoutAxes((command.context as RectTransform), false, false);
+			RectTransformUtility.FlipLayoutAxes((command.context as RectTransform), false, true);
 		}
 
 		[MenuItem("CONTEXT/RectTransform/Flip Vertical")]
 		static void FlipLayoutOnVertical(MenuCommand command)
 		{
-			RectTransformUtility.FlipLayoutOnAxis((command.context as RectTransform), 1, false, false);
+			RectTransformUtility.FlipLayoutOnAxis((command.context as RectTransform), 1, false, true);
 		}
 
 		[MenuItem("CONTEXT/RectTransform/Flip Horizontal")]
 		static void FlipLayoutOnHorizontal(MenuCommand command)
 		{
-			RectTransformUtility.FlipLayoutOnAxis((command.context as RectTransform), 0, false, false);
+			RectTransformUtility.FlipLayoutOnAxis((command.context as RectTransform), 0, false, true);
 		}
 
 
